@@ -2,7 +2,6 @@
 ## Google Gemini와 Antigravity 기반 AI 서비스기획 취업 과정
 ( 2026.10.14 ~ 12.22 , 350Hr)
 
-####  송파 새싹 서비스 기획자 양성 과정
 https://sesac.seoul.kr/sesac/course/offline/courseDetail.do?crsSn=1189
 
 <br>
