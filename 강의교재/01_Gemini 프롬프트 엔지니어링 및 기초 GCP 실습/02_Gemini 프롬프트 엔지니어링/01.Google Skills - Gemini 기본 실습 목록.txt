@@ -1,0 +1,111 @@
+[Google Skills : Gemini 기본 실습 목록]
+
+=============================================================
+--------------------------------------------------------
+[Course] : Develop AI-Powered Prototypes in Google AI Studio
+https://www.skills.google/course_templates/1426
+--------------------------------------------------------
+[1] Google AI Studio: Prompt Design : 입문
+https://www.skills.google/course_templates/1426/labs/582284
+Develop AI-Powered Prototypes in Google AI Studio --> Google AI Studio: Prompt Design
+
+[2] Explore the Multimodal Capabilities of Google AI Studio : 입문 --> (메뉴 변경으로 실습 불가)
+https://www.skills.google/course_templates/1426/labs/582285
+Develop AI-Powered Prototypes in Google AI Studio --> Explore the Multimodal Capabilities of Google AI Studio
+
+[3] Prototype Applications in Google AI Studio : 입문
+https://www.skills.google/course_templates/1426/labs/582286
+Develop AI-Powered Prototypes in Google AI Studio --> Prototype Applications in Google AI Studio
+=============================================================
+--------------------------------------------------------
+[Course] : Prompt Design in Vertex AI
+https://www.skills.google/course_templates/976
+--------------------------------------------------------
+[4] Generative AI with Vertex AI: Prompt Design : 입문
+https://www.skills.google/course_templates/976/labs/550875
+Prompt Design in Vertex AI -->Generative AI with Vertex AI: Prompt Design
+
+[5] Get Started with Vertex AI Studio : 입문
+https://www.skills.google/course_templates/976/labs/550876
+Prompt Design in Vertex AI -->Get Started with Vertex AI Studio
+
+[6] Getting Started with Google Generative AI Using the Gen AI SDK : 입문
+https://www.skills.google/course_templates/976/labs/550877
+Prompt Design in Vertex AI -->Getting Started with Google Generative AI Using the Gen AI SDK
+
+[7] Prompt Design in Vertex AI: Challenge Lab : 입문  (실습 생략)
+https://www.skills.google/course_templates/976/labs/550878
+Prompt Design in Vertex AI -->Prompt Design in Vertex AI: Challenge Lab
+
+[8] Introduction to Function Calling with Gemini : 중급
+https://www.skills.google/course_templates/959/labs/592559
+Explore Generative AI with the Gemini API in Vertex AI --> Introduction to Function Calling with Gemini
+이 실습에서는 다음을 수행합니다.
+Google Gen AI SDK for Python 설치
+Vertex AI의 Gemini API를 사용하여 model_name 모델과 상호 작용하는 방법:
+텍스트 프롬프트에서 함수 호출을 생성하여 고객이 Google 스토어의 제품 정보를 얻도록 지원
+텍스트 프롬프트에서 함수 호출을 생성하고 외부 API를 호출하여 주소의 지오코딩 구현
+텍스트 프롬프트에서 함수 호출을 생성하여 로그 데이터에서 엔티티 추출
+=============================================================
+--------------------------------------------------------
+[Course] : Gemini for Application Developers
+https://www.skills.google/course_templates/881/
+--------------------------------------------------------
+[9] Develop an app with Gemini : 입문
+https://www.skills.google/course_templates/881/labs/475235
+Gemini for Application Developers --> Develop an app with Gemini
+이 실습에서는 Google Cloud의 AI 기반 공동작업 도구인 Gemini를 사용하여 샘플 앱을 탐색, 생성,
+수정, 테스트, 배포합니다.
+
+[10] Develop an App with the Vertex AI Gemini API : 입문 (구버전으로 실습 불가)
+https://www.skills.google/course_templates/980/labs/527090
+Integrating Applications with Gemini 1.0 Pro on Google Cloud --> Develop an App with the Vertex AI Gemini API
+이 실습에서는 Vertex AI SDK for Python을 사용하여 Vertex AI Gemini API를 호출합니다.
+=============================================================
+--------------------------------------------------------
+[Path] : Gemini in BigQuery
+https://www.skills.google/paths/1803
+--------------------------------------------------------
+[11] Explore Data with Gemini in BigQuery : 입문
+https://www.skills.google/paths/1803/course_templates/1169/labs/608709
+Gemini in BigQuery --> Boost Productivity with Gemini in BigQuery --> Explore Data with Gemini in BigQuery
+(주의) "인사이트" 탭이 "통계"탭으로 변경됨, 메뉴 일부 다름
+
+[12] Develop Code with Gemini in BigQuery : 입문
+https://www.skills.google/paths/1803/course_templates/1169/labs/608711
+Gemini in BigQuery --> Boost Productivity with Gemini in BigQuery --> Develop Code with Gemini in BigQuery
+(주의) "쿼리 설명"을 위해서 라인번호를 클릭한다, 메뉴 일부 다름
+
+[13] Analyze Customer Reviews with Gemini Using SQL : 중급
+https://www.skills.google/paths/1803/course_templates/1133/labs/608697
+Gemini in BigQuery --> Work with Gemini Models in BigQuery --> Analyze Customer Reviews with Gemini Using SQL
+(주의) 탐색창의 상단의 나침반 아이콘을 누르면 +데이터추가 메뉴 보임
+
+[14] Analyze Customer Reviews with Gemini Using Python Notebooks : 중급 (실습 생략:난이도 높음)
+https://www.skills.google/paths/1803/course_templates/1133/labs/608699
+Gemini in BigQuery --> Work with Gemini Models in BigQuery -->Analyze Customer Reviews with Gemini Using Python Notebooks
+
+[15] Create a RAG Application with BigQuery : 중급 (실습 생략:난이도 높음)
+https://www.skills.google/paths/1803/course_templates/1210/labs/529948
+Gemini in BigQuery --> Create Embeddings, Vector Search, and RAG with BigQuery --> Create a RAG Application with BigQuery
+=============================================================
+[16] Create a Shopping Agent with Google AI Studio : 입문 (실습 생략)
+https://www.skills.google/focuses/153957?catalog_rank=%7B%22rank%22%3A1%2C%22num_filters%22%3A0%2C%22has_search%22%3Atrue%7D&parent=catalog&search_id=79253464
+이 실습에서는 다음 작업을 수행하는 방법을 배웁니다.
+핵심 사용자 여정(CUJ)을 기반으로 쇼핑 상담원을 생성합니다.
+Vibe 코딩과 자연어 프롬프트를 사용하여 상담원 기능을 개선하고 반복적으로 수정합니다.
+다양한 시나리오에서 상담원 동작을 테스트하고 검증합니다.
+=============================================================
+[17] Multimodal Retrieval Augmented Generation (RAG) using the Vertex AI Gemini API : 중급 (실습 생략)
+https://www.skills.google/focuses/85643?catalog_rank=%7B%22rank%22%3A1%2C%22num_filters%22%3A0%2C%22has_search%22%3Atrue%7D&parent=catalog&search_id=78802307
+이 실습에서는 Vertex AI의 Gemini API, 텍스트 임베딩, 멀티모달 임베딩과 RAG를 사용하여 문서 검색엔진을 빌드하는 방법을 보여줍니다.
+
+
+
+
+
+
+
+
+
+ 
