@@ -1,6 +1,6 @@
 
 ## Google Gemini와 Antigravity 기반 AI 서비스기획 취업 과정
-( 2026.10.14 ~ 12.22 , 350Hr)
+( 2026.10.14 ~ 11.03 )
 
 https://sesac.seoul.kr/sesac/course/offline/courseDetail.do?crsSn=1189
 
@@ -9,8 +9,7 @@ https://sesac.seoul.kr/sesac/course/offline/courseDetail.do?crsSn=1189
 ## 강사 git 주소 :    https://github.com/digicope/ai_service_1014
 <br>
 
-#### git 사용기간 : 2026.10.14 ~ 12.22 (2026.12.22  이후에는 접속 불가)
-<br>
+#### git 사용기간 : 
 
 
 #### 강사: 고병화
