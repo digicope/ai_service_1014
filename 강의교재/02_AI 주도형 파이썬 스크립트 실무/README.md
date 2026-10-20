@@ -6,6 +6,9 @@ https://wikidocs.net/264610
 
 <br>
 
-### Kaggle Credit Card Fraud Detection 데이터 (강사공유 파일)
+### Kaggle Credit Card Fraud Detection 데이터 (강사공유 파일) :
 https://drive.google.com/file/d/1MT4Rxd15-vGMu-M0NKk9T_xv3P3OF3g9/view?usp=sharing
 <br>
+
+### 원본 링크 :
+https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
