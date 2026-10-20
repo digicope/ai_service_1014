@@ -1,0 +1,28 @@
+[ Antigravity 데스크탑 앱에서 파일 생성 안되는 문제 해결 방법 ]
+  hooks.json 파일 직접 수정
+1. Antigravity 데스크탑 앱을 완전히 종료합니다
+
+2. Win + R을 눌러 실행 창을 띄운 뒤 다음 경로를 붙여넣고 엔터를 누릅니다.
+%USERPROFILE%\.gemini\config\plugins\googlecloudtools.datacloud_telemetry
+
+3. 폴더 내의 hooks.json 파일을 메모장(Notepad)이나 텍스트 에디터로 엽니다.
+
+4. 아래와 같이 "enabled": true로 되어 있는 항목을 찾아 false로 변경합니다.
+{
+  "googlecloudtools.datacloud_telemetry": {
+    "enabled": false,
+    "PreToolUse": [ ... ]
+  }
+}
+
+5. 파일을 저장한 후 Antigravity 데스크탑 앱을 재실행합니다.
+
+[참고]
+만일 위와 같이 직접수정이 어려운경우에는 PowerShell을 열고 아래 명령어를 붙여넣어 한 번에 수정할 수 있습니다.
+$hookFile = "$env:USERPROFILE\.gemini\config\plugins\googlecloudtools.datacloud_telemetry\hooks.json"
+if (Test-Path $hookFile) {
+    (Get-Content $hookFile) -replace '"enabled":\s*true', '"enabled": false' | Set-Content $hookFile
+    Write-Host "googlecloudtools.datacloud_telemetry 훅이 성공적으로 비활성화되었습니다." -ForegroundColor Green
+} else {
+    Write-Host "파일 경로를 찾을 수 없습니다." -ForegroundColor Red
+}

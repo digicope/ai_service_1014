@@ -1,0 +1,22 @@
+[Antigravity 데스크탑 앱에서 GCP 유료 종량제 계정으로 연동하는 방법]
+
+1. 기존 계정 로그아웃
+Antigravity 데스크탑 앱 좌측 하단의 프로필(이메일 주소)을 클릭하고 Sign Out을 누릅니다.   
+
+2. 비즈니스 로그인 시작
+초기 로그인 화면에서 Continue with Google 대신 
+Use business account를 클릭합니다.
+Continue with Google Cloud를 선택한 후, 
+브라우저에서 결제 수단(신용카드 등)이 등록된 GCP 계정으로 로그인합니다.
+
+3. 결제 모델(Billing Model) 선택
+Select Billing Model 창에서 우측의 Pay As You Go를 선택합니다. 
+(Agent Platform을 통한 토큰 종량제 과금 방식)   
+
+4. 리전 및 GCP 프로젝트 선택
+Choose Region에서 가장 트래픽 가용성이 높은 Global을 선택합니다.   
+연결할 본인의 유료 GCP Project ID를 지정하고 승인을 완료합니다.
+
+5.연동 결과 확인
+좌측 하단 Settings > Account 화면에 진입합니다.   
+Your Plan: Agent Platform 문구와 지정한 Project ID가 정상적으로 표시되는지 확인합니다.
