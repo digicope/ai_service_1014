@@ -1,0 +1,44 @@
+[앙상블 모델 추가 실습 과제]
+
+[1] titanic_train.csv와 titanic_test.csv 사용
+
+1. 데이터 분석해줘.
+
+2. 앙상블 모델을 사용하여 머신 러닝 모델을 만들고 평가지표를 알려줘.
+
+================================================
+[2] credit_card.csv사용
+
+1. 데이터 분석해줘.
+
+2. 앙상블 모델을 사용하여 머신 러닝 모델을 만들고 평가지표를 알려줘.
+
+================================================
+
+*  앙상블 사용 Classification 실전 연습 과제 
+UCI Machine Learning Repository 사이트에서 분류(classification)용 데이터를 
+다운 받아서 앙상블 모델을 사용하여 학습 시키고 예측과 평가 지표를 구한다
+(정확도와 정밀도, 재현율,F1-score, roc_auc 를 출력한다)
+
+[추천 데이터 셋]
+1. Balance Scale Data Set : 저울 균형 분류 예측 
+(https://archive.ics.uci.edu/dataset/12/balance+scale)
+
+2. Car Evaluation Data Set : 자동차 가치 분류 예측
+(https://archive.ics.uci.edu/dataset/19/car+evaluation)
+
+3. Congressional Voting Records Data Set : 의회 투표 기록에 따른 소속 당 분류 예측
+(https://archive.ics.uci.edu/dataset/105/congressional+voting+records)
+
+4. Diabetic Retinopathy Debrecen Data Set Data Set : 당뇨 망막증 진단 예측
+(https://archive.ics.uci.edu/dataset/329/diabetic+retinopathy+debrecen)
+
+5. Heart Disease Data Set : 심장 질환 진단 예측
+(https://archive.ics.uci.edu/dataset/45/heart+disease)
+
+6. Occupancy Detection Data Set : 환경 시설에 따른 오피스 룸 점유 상태 분류 예측)
+(https://archive.ics.uci.edu/dataset/357/occupancy+detection
+
+7. Perfume Data Set : 향수 분류 예측
+(https://archive.ics.uci.edu/dataset/303/perfume+data)
+
