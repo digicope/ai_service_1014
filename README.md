@@ -9,7 +9,7 @@ https://sesac.seoul.kr/sesac/course/offline/courseDetail.do?crsSn=1189
 ## 강사 git 주소 :    https://github.com/digicope/ai_service_1014
 <br>
 
-#### git 사용기간 : 
+#### git 사용기간 : ( 2026.10.14 ~ 11.03 )
 
 
 #### 강사: 고병화
