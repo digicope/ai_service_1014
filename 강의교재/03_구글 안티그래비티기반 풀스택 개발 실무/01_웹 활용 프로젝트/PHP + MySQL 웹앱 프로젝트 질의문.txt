@@ -1,0 +1,210 @@
+[PHP + MySQL 웹앱 프로젝트 실습 질의]
+
+프로젝트 폴더명 : PHP_MySQL_Project
+
+MySQL 관리(UTF-8) URL : digicope.dothome.co.kr/myadmin
+
+
+# 1단계: 프로젝트 초기 구조 생성
+
+```
+Cursor, PHP + MySQL로 동작하는 사용자 관리 웹앱을 만들거야.
+폴더 구조를 아래처럼 만들어줘:
+
+/myapp/
+ ┣ index.html
+ ┣ style.css
+ ┣ script.js
+ ┣ db_config.php
+ ┣ create_table.php
+ ┣ insert.php
+ ┣ fetch.php
+ ┣ update.php
+ ┣ delete.php
+ ┗ seed_data.php
+
+앱의 목적은 “이름, 이메일, 나이, 등록일” 정보를 저장하고 관리하는 거야.
+```
+
+---
+
+# 2단계: DB 연결 설정 (dothome용)
+
+```
+db_config.php 파일을 작성해줘.
+dothome.co.kr 무료 호스팅 환경 기준으로 MySQL 연결하도록 하고
+에러 발생 시 메시지를 출력하도록 만들어줘.
+
+환경 변수:
+$host = "localhost";
+$user = "dothome_id";
+$pass = "pass01**";
+$dbname = "dothome_id";
+```
+
+---
+
+# 3단계: 테이블 생성 파일 만들기
+
+```
+create_table.php 파일을 작성해줘.
+users 테이블을 자동으로 생성하는 PHP 코드로 만들어줘.
+
+컬럼:
+- id (INT, AUTO_INCREMENT, PRIMARY KEY)
+- name (VARCHAR(50))
+- email (VARCHAR(100))
+- age (INT)
+- reg_date (DATETIME, 기본값 CURRENT_TIMESTAMP)
+
+성공 시 “테이블 생성 완료” 출력하도록 해줘.
+```
+(https://digicope.dothome.co.kr/create_table.php으로 실행해본다)
+---
+
+# 4단계: 샘플 데이터 자동 생성 (seed_data.php)
+
+```
+seed_data.php 파일을 작성해줘.
+10명의 가상 사용자를 랜덤하게 생성해서 users 테이블에 삽입하는 PHP 코드를 만들어줘.
+
+이름은 한국식으로 (예: 김민수, 박지연 등) 랜덤하게,
+이메일은 영어 조합 (예: minsu@example.com),
+나이는 20~50 사이 랜덤 정수로 생성되게 해줘.
+```
+
+---
+
+# 5단계: 데이터 삽입 API (insert.php)
+
+```
+insert.php 파일을 작성해줘.
+POST로 받은 name, email, age 데이터를 users 테이블에 삽입하고
+JSON 형식으로 {status: 'success'} 또는 {status: 'error'}를 반환하도록 만들어줘.
+```
+
+---
+
+# 6단계: 데이터 조회 API (fetch.php)
+
+```
+fetch.php 파일을 작성해줘.
+users 테이블의 전체 데이터를 SELECT해서 JSON으로 반환하도록 만들어줘.
+등록일은 YYYY-MM-DD 형식으로 포맷해서 보여줘.
+```
+
+---
+
+# 7단계: 데이터 수정 API (update.php)
+
+```
+update.php 파일을 작성해줘.
+POST로 전달된 id, name, email, age 값으로 기존 데이터를 수정하는 PHP 코드를 만들어줘.
+성공 시 “업데이트 완료” 메시지를 반환해줘.
+```
+
+---
+
+# 8단계: 데이터 삭제 API (delete.php)
+
+```
+delete.php 파일을 작성해줘.
+POST로 전달된 id 값에 해당하는 데이터를 삭제하고 “삭제 완료” 메시지를 반환해줘.
+```
+
+---
+
+# 9단계: 프론트엔드 UI 구현 (index.html)
+
+```
+index.html을 작성해줘.
+사용자 목록을 테이블 형태로 표시하고,
+새 사용자 추가 입력창과 “추가” 버튼을 만들어줘.
+
+컬럼은 이름, 이메일, 나이, 등록일, 수정/삭제 버튼으로 구성해줘.
+script.js와 style.css를 연결해줘.
+```
+
+---
+
+# 10단계: JavaScript CRUD 로직 (script.js)
+
+```
+script.js 파일을 작성해줘.
+fetch()를 사용해서 insert.php, fetch.php, update.php, delete.php를 비동기로 호출하도록 구현해줘.
+
+페이지 로드 시 전체 목록을 불러오고,
+“추가” 버튼 클릭 시 새 사용자 등록 후 목록 새로고침되게 해줘.
+
+수정, 삭제 버튼 클릭 시에도 각각 API 호출되도록 만들어줘.
+```
+
+---
+
+# 11단계: CSS 디자인 적용 (style.css)
+
+```
+style.css를 작성해줘.
+테이블은 border와 zebra-stripe 효과를 주고,
+버튼 hover 시 색상이 바뀌게 해줘.
+상단에 “사용자 관리 시스템” 제목을 중앙 정렬로 표시해줘.
+```
+
+---
+
+# 12단계: 통합 테스트 시나리오 생성
+
+```
+seed_data.php로 샘플 데이터를 자동 생성한 후,
+index.html에서 CRUD 기능이 전부 동작하는지 테스트할 수 있도록
+테스트 시나리오를 순서대로 정리해줘.
+```
+
+**예상 결과**
+
+1. `create_table.php` 실행 → 테이블 생성
+2. `seed_data.php` 실행 → 10명 자동 삽입
+3. `index.html` 접속 → 데이터 표시
+4. 새 사용자 추가/수정/삭제 테스트
+
+---
+
+# 13단계: (선택) CSV 내보내기 기능
+
+```
+export_csv.php 파일을 작성해줘.
+users 테이블의 모든 데이터를 CSV 파일로 다운로드할 수 있도록 만들어줘.
+파일 이름은 users_날짜.csv 형태로 해줘.
+```
+
+---
+
+# 14단계: 보안 강화 및 실무형 수정
+
+```
+모든 SQL문을 Prepared Statement로 변경해줘.
+SQL Injection 방지를 위한 보안 코드를 적용한 버전으로 전체 파일을 업데이트해줘.
+```
+
+---
+
+# 15단계: dothome 배포 가이드 생성
+
+```
+이 프로젝트를 dothome 무료호스팅에 업로드하기 위한 단계별 가이드를 만들어줘.
+phpMyAdmin에서 테이블 생성, seed_data 실행, FTP 업로드 절차까지 포함해서 정리해줘.
+```
+
+---
+
+
+# 추가 팁
+
+-------------------------------------------------------------------------------------------------
+|      항목                |              설명                                                                |
+| ---------------------- | ----------------------------------------------------------------------- |
+|  테스트 데이터 확장 |  `seed_data.php`에서 faker 대신 `array_rand()`로 간단 생성       |
+|  CSV 자동백업        |  `export_csv.php`를 크론탭 대신 JS 버튼으로 호출                   |
+|  교육용 확장          |  Column을 “직업”, “도시” 등으로 확장 후 UI 변경 실습 가능       |
+|  Cursor 활용          |  “이제 이 프로젝트 전체를 zip으로 묶어줘” → 자동 패키징 가능  |
+-------------------------------------------------------------------------------------------------

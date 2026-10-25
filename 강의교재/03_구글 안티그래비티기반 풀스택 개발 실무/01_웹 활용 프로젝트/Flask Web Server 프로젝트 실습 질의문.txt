@@ -1,0 +1,204 @@
+[Flask Web Server 프로젝트 실습 질의]
+
+프로젝트 폴더명 : Flask_Basic_Project
+
+모듈 설치 명령 : pip install flask
+
+# 1단계 : 프로젝트 초기 구조 생성
+
+Flask로 동작하는 기본 웹 서버를 만들거야.
+소스 내용은 없이 폴더 구조만 아래처럼 만들어줘:
+
+/flask_app/
+ ┣ app.py
+ ┣ requirements.txt
+ ┣ templates/
+ ┃ ┗ index.html
+ ┗ static/
+     ┗ style.css
+
+
+# 2단계 : Flask 서버 기본 코드 작성
+
+app.py 파일을 작성해줘.
+- Flask 앱을 생성해줘
+- "/" 경로로 접속 시 templates/index.html을 렌더링해줘
+- "/api/hello" 경로를 GET 방식으로 추가해줘
+- /api/hello 응답은 다음 JSON 형식으로 만들어줘
+  {
+    "message": "Hello Flask API"
+  }
+- host는 0.0.0.0으로 설정해줘
+- port는 5000으로 설정해줘
+- debug 모드를 활성화해줘
+- 초보자 실습용 주석을 충분히 달아줘
+
+
+# 3 단계 : HTML 템플릿 작성
+
+templates/index.html 파일을 작성해줘.
+
+- HTML5 기본 구조로 만들어줘
+- 페이지 제목은 "Flask Web Server 실습"으로 만들어줘
+- 화면에 다음 문구를 출력해줘
+  "Flask 서버가 정상적으로 실행 중이다."
+- static/style.css 파일을 연결해줘
+
+
+#4 단계 : CSS 스타일 파일 작성
+
+static/style.css 파일을 작성해줘.
+
+- 전체 페이지를 중앙 정렬해줘
+- 배경색은 연한 회색으로 설정해줘
+- 제목은 크게 표시해줘
+- 실습용이므로 단순한 스타일만 적용해줘
+
+# 5단계 : requirements.txt 파일 작성
+
+requirements.txt 파일을 작성해줘.
+
+- Flask만 포함해줘
+- 최신 안정 버전을 기준으로 작성해줘
+
+
+# 6단계 :  실행 방법 문서 작성
+
+이 프로젝트를 실행하는 방법을 문서로 단계별로 정리해줘.
+
+- requirements.txt 설치 방법
+- Flask 서버 실행 명령어
+- 브라우저에서 접속할 주소
+- Flask 서버가 정상 동작하는지 확인하는 테스트 방법
+- "/" 경로 접속 시 확인할 화면
+- "/api/hello" API 테스트 방법
+- 자주 발생하는 오류 2가지와 원인
+- host=0.0.0.0의 의미
+- 외부 접속을 위한 방화벽 포트 설명
+- debug 모드 사용 시 주의사항
+
+---------------------------------------------------------------------------------------
+
+# 7단계 : REST API CRUD 연산 기능 구현하기 (웹페이지 입력/버튼으로 테스트)
+
+Flask를 사용한 REST API CRUD 연산 기능을 구현해줘.
+기존 소스를 참조하되, 새 파일(flask_crud_app.py)을 추가해서 구현해줘.
+또한 터미널 명령(curl) 테스트가 아니라, 웹페이지에서 입력하고 버튼을 눌러 CRUD를 확인하는 방식으로 동작하도록 만들어줘.
+
+요구사항은 다음과 같다.
+
+[1] 데이터 저장소는 SQLite를 사용해줘.
+- DB 파일명: app.db
+- 테이블명: users
+- 컬럼:
+  id (INTEGER, PRIMARY KEY, AUTOINCREMENT)
+  name (TEXT, NOT NULL)
+  email (TEXT, NOT NULL, UNIQUE)
+  age (INTEGER)
+  reg_date (TEXT, 기본값 현재시간)
+
+[2] REST API 엔드포인트를 아래처럼 만들어줘.
+
+(1) Create: 사용자 추가
+- POST /api/users
+- 요청 JSON 예시:
+  { "name": "김민수", "email": "minsu@example.com", "age": 32 }
+- 응답 JSON 예시:
+  { "status": "success", "id": 1 }
+
+(2) Read: 사용자 목록 조회
+- GET /api/users
+- 응답은 users 전체 목록을 JSON 배열로 반환해줘
+- reg_date는 "YYYY-MM-DD" 형태로 포맷해서 내려줘
+
+(3) Read: 사용자 1명 조회
+- GET /api/users/<id>
+- 해당 id가 없으면 404와 함께 JSON 에러 메시지를 반환해줘
+
+(4) Update: 사용자 수정
+- PUT /api/users/<id>
+- 요청 JSON 예시:
+  { "name": "김민수", "email": "minsu2@example.com", "age": 33 }
+- 성공 시 JSON으로 업데이트된 사용자 정보를 반환해줘
+- 해당 id가 없으면 404 반환해줘
+
+(5) Delete: 사용자 삭제
+- DELETE /api/users/<id>
+- 성공 시 { "status": "deleted" } 반환해줘
+- 해당 id가 없으면 404 반환해줘
+
+[3] 구현 방식 요구사항
+- Flask 기본만 사용해줘(sqlite3 모듈로 구현)
+- ORM은 사용하지 말아줘
+- DB 초기화 함수(init_db)를 만들어 앱 시작 시 테이블이 없으면 자동 생성되게 해줘
+- 입력값 검증을 넣어줘:
+  name, email은 필수
+  age는 정수이며 없으면 null 허용
+- 에러 응답은 항상 JSON으로 내려줘:
+  { "status": "error", "message": "..." }
+
+[4] 웹페이지 기반 테스트 UI를 추가해줘. (터미널 요청 금지)
+아래 파일을 새로 만들거나 기존 파일을 업데이트해서,
+브라우저에서 입력/버튼 클릭만으로 CRUD 테스트가 가능하게 만들어줘.
+
+- templates/users.html 파일을 새로 만들어줘.
+- static/users.js 파일을 새로 만들어줘.
+- static/users.css 파일을 새로 만들어줘.
+
+(1) users.html 요구사항
+- 화면 상단에 "REST API CRUD 테스트 페이지" 제목을 표시해줘.
+- 사용자 목록을 테이블로 보여줘.
+  컬럼: id, name, email, age, reg_date, actions(수정/삭제)
+- 아래 입력 폼을 제공해줘.
+  입력: name, email, age
+  버튼: "추가"
+- 별도 입력 폼을 제공해줘.
+  입력: id
+  버튼: "단일 조회"
+  결과는 화면에 JSON 형태로 출력해줘(예: pre 태그)
+- 테이블의 각 행에 "수정", "삭제" 버튼을 만들어줘.
+  - "수정" 버튼을 누르면 해당 행의 name/email/age를 편집 가능하게 만들고
+    저장 버튼(또는 수정 완료 버튼)으로 PUT 요청이 나가게 해줘.
+  - "삭제" 버튼을 누르면 해당 id로 DELETE 요청이 나가게 해줘.
+- API 호출 결과(성공/실패 메시지)는 화면에 알림 영역으로 표시해줘.
+- users.js, users.css를 연결해줘.
+
+(2) users.js 요구사항
+- fetch API를 사용해 CRUD 엔드포인트를 호출해줘.
+- 페이지 로드 시 GET /api/users로 목록을 불러와 테이블을 렌더링해줘.
+- "추가" 버튼 클릭 시 POST /api/users 호출 후 목록을 다시 불러와줘.
+- "단일 조회" 버튼 클릭 시 GET /api/users/<id> 호출 후 JSON 결과를 화면에 출력해줘.
+- "수정" 흐름:
+  - 행을 편집 모드로 전환(입력칸 표시)
+  - 저장 시 PUT /api/users/<id> 호출
+  - 성공 시 목록 다시 불러오기
+- "삭제" 버튼 클릭 시 DELETE /api/users/<id> 호출 후 목록 다시 불러오기
+- 서버 에러(404/500 등)와 검증 실패 응답을 받아 화면에 {status, message} 형태로 표시해줘.
+
+(3) users.css 요구사항
+- 테이블에 border와 zebra-stripe 스타일을 적용해줘.
+- 버튼 hover 효과를 넣어줘.
+- 페이지 전체 레이아웃은 보기 좋게 폭을 제한하고 가운데 정렬해줘.
+
+(4) 라우팅 추가 요구사항
+- GET /users 경로를 추가해서 templates/users.html 페이지가 열리게 해줘.
+- 기존 "/" 페이지가 있어도 유지하고, /users에서 CRUD 테스트 페이지로 접근하게 해줘.
+
+[5] 사용 방법(웹페이지 기반) 안내를 만들어줘.
+- 서버 실행 후 브라우저에서 어떤 URL로 접속하는지 안내해줘.
+- 추가/조회/수정/삭제를 웹페이지에서 어떻게 검증하는지 순서대로 안내해줘.
+- 외부 VM에서 실행 시 /users 접속을 위해 방화벽 포트(5000) 열어야 한다는 안내도 포함해줘.
+
+최종 출력은 다음을 포함해줘.
+- 추가/수정된 전체 파일 목록
+- 웹페이지에서 CRUD가 동작하는 확인 절차
+--------------------------------------------------------------------
+
+(실행방법) 앱실행 후 아래와 같이 주소뒤에 users를 넣어 접속한다
+http://192.168.0.12:5000/users
+
+
+
+
+
+
