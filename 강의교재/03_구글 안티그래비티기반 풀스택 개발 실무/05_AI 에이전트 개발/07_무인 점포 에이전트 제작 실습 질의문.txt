@@ -1,0 +1,287 @@
+[무인 점포 에이전트 제작 실습 질의문]
+
+==========================================================
+프로젝트 폴더명: AI_Agent_AmazonGo_Store
+===========================================================
+
+다음 요구사항을 모두 반영하여 하나의 프로젝트를 자동 생성해줘.
+
+📌 최종 목표
+카메라로 촬영한 짧은 영상 또는 실시간 스트림(프레임 단위)을 입력하면,
+
+1) 사람 검출  
+2) 손/팔 영역 추적  
+3) 상품 선반 인식  
+4) “Pick(집었다)” vs “Put(놓았다)” 판단  
+5) Pick이면 자동 장바구니 추가  
+6) 장바구니 금액 자동 계산  
+7) LangChain create_agent() 기반 Workflow 통제  
+8) Streamlit UI로 실시간 모니터링  
+
+을 구현하는 **무인 점포 AI 에이전트 전체 프로젝트**를 생성해줘.
+
+※ 영상에서 “상품을 손으로 집는 순간”을 인식하는 데 초점을 맞춘다.
+※ 업로드 방식은 “이미지 파일 업로드”가 아니라 “영상 파일 업로드 or 프레임 자동 추출”.
+
+===========================================================
+📁 1. 프로젝트 폴더 구조
+===========================================================
+
+AI_Agent_AmazonGo_Realtime/
+ ├── app.py                 # Streamlit UI
+ ├── agent.py               # LangChain create_agent() 에이전트
+ ├── vision_core.py         # 영상 처리(Pick/Put) 핵심 로직
+ ├── product_db.py          # 상품/가격 데이터베이스
+ ├── utils.py               # 프레임 변환/디버그 함수
+ ├── requirements.txt
+ └── README.md
+
+
+===========================================================
+📦 2. requirements.txt 생성
+===========================================================
+
+streamlit
+opencv-python
+langchain
+langchain-core
+langchain-openai
+python-dotenv
+Pillow
+
+
+===========================================================
+🧰 3. product_db.py (상품 + 선반 위치)
+===========================================================
+
+구현 요구:
+- 상품 이름 + 가격
+- 선반 위치를 bounding box 형태로 설정(예: x1,y1,x2,y2)
+- 카메라 영상에서 사람이 특정 선반 범위에 손을 넣으면 “Pick 후보”
+
+예시 코드:
+-----------------------------------------------------------
+PRODUCTS = {
+    "chips": 2000,
+    "cola": 1500,
+    "water": 1000,
+    "sandwich": 3500
+}
+
+# 선반 위치(예: 좌표 체계는 영상 크기에 맞게 조정)
+SHELF_ZONES = {
+    "chips": (50, 100, 250, 300),
+    "cola": (300, 100, 500, 300),
+    "water": (50, 350, 250, 550),
+    "sandwich": (300, 350, 500, 550)
+}
+
+def get_price(product):
+    return PRODUCTS.get(product, -1)
+-----------------------------------------------------------
+
+
+===========================================================
+🎥 4. vision_core.py — Pick/Put 판정 로직
+===========================================================
+
+구현 요구:
+1) 영상 파일 입력 → 프레임 추출 (opencv)
+2) 사람 감지 → 손 위치만 추출
+3) 손 좌표가 어떤 선반 영역에 들어갔는지 판단
+4) 이전 프레임엔 있었고 현재 프레임엔 상품이 사라졌다면 → Pick
+5) 간단한 Rule 기반 Pick 추정으로 충분
+
+Gemini Vision API는 “손이 상품 앞에 있는지”, “어떤 상품인지” 추론하는 데 보조 활용.
+
+예시 코드:
+-----------------------------------------------------------
+import cv2
+from product_db import SHELF_ZONES
+
+def extract_frames(video_path, skip=5):
+    cap = cv2.VideoCapture(video_path)
+    frames = []
+    count = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if count % skip == 0:
+            frames.append(frame)
+        count += 1
+    cap.release()
+    return frames
+
+def detect_hand_zone(frame):
+    """
+    Vision API로 손 위치를 추정한다.
+    단순화를 위해 손이 위치한 대략적 bbox만 받아온다고 가정.
+    """
+    # frame → base64 변환
+    import base64
+    _, buffer = cv2.imencode(".jpg", frame)
+    img_base64 = base64.b64encode(buffer).decode("utf-8")
+
+    response = _______(
+        model="gemini-3.5-flash",
+        messages=[
+            {"role": "system", "content": "이미지에서 손의 대략적인 위치를 x1,y1,x2,y2 형태로 숫자로만 제공해라."},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": "손의 위치 bbox를 찾고 숫자만 반환해라."},
+                    {"type": "input_image", "image_url": f"data:image/jpeg;base64,{img_base64}"}
+                ]
+            }
+        ]
+    )
+    text = ______
+    # "100,120,180,250" 형태 파싱
+    try:
+        parts = list(map(int, text.replace(" ", "").split(",")))
+        return tuple(parts)  # (x1,y1,x2,y2)
+    except:
+        return None
+
+def determine_pick(prev_hand_zone, curr_hand_zone):
+    """단순 규칙 기반: 손이 선반 영역을 통과하면 Pick 발생 가능."""
+    if not curr_hand_zone:
+        return None
+
+    x1, y1, x2, y2 = curr_hand_zone
+
+    # 선반 영역에 들어갔는지 체크
+    for product, (sx1, sy1, sx2, sy2) in SHELF_ZONES.items():
+        if x1 >= sx1 and y1 >= sy1 and x2 <= sx2 and y2 <= sy2:
+            return product
+    
+    return None
+-----------------------------------------------------------
+
+- 환경 변수는 .env 파일을 다음과 같이 불러오기 :  load_dotenv()
+
+===========================================================
+🤖 5. agent.py — LangChain create_agent() 에이전트
+===========================================================
+
+구현 요구:
+- Tool: analyze_video(video_path), add_to_cart(product), get_cart_total()
+- cart 전역 리스트 사용
+- agent.invoke → result["messages"][-1].content
+
+예시 코드:
+-----------------------------------------------------------
+from langchain.agents import create_agent
+from langchain.tools import tool
+from vision_core import extract_frames, detect_hand_zone, determine_pick
+from product_db import get_price
+from typing import List
+
+cart = []
+
+@tool
+def analyze_video(video_path: str) -> str:
+    """영상 분석 → Pick된 상품 감지."""
+    frames = extract_frames(video_path)
+    prev_hand = None
+    picks = []
+
+    for frame in frames:
+        curr_hand = detect_hand_zone(frame)
+        product = determine_pick(prev_hand, curr_hand)
+        if product:
+            picks.append(product)
+        prev_hand = curr_hand
+    
+    if not picks:
+        return "No product detected."
+    
+    return f"Detected picks: {', '.join(picks)}"
+
+@tool
+def add_to_cart(product: str) -> str:
+    cart.append(product)
+    return f"{product} added."
+
+@tool
+def get_cart_total(_: str="") -> str:
+    total = sum(get_price(p) for p in cart)
+    return f"Total amount: {total} KRW"
+
+llm = ____
+
+agent = create_agent(
+    model=llm,
+    tools=[analyze_video, add_to_cart, get_cart_total],
+    system_prompt="카메라 영상에서 Pick된 상품을 감지하여 장바구니에 자동 추가하는 무인 점포 Agent이다."
+)
+
+def run_agent(prompt: str):
+    result = agent.invoke({"messages":[{"role":"user","content":prompt}]})
+    return result["messages"][-1].content
+-----------------------------------------------------------
+
+
+===========================================================
+🖥 6. Streamlit UI — app.py
+===========================================================
+
+구현 요구:
+- 영상 업로드
+- “영상 분석하기” 버튼  
+- Pick된 상품 확인  
+- Agent가 자동으로 장바구니 관리  
+- 총 금액 조회
+
+예시 코드:
+-----------------------------------------------------------
+import streamlit as st
+import os
+from agent import run_agent
+
+st.title("🏪 무인 점포 AI (Amazon Go Simulation)")
+
+video_file = st.file_uploader("상품을 집는 장면이 포함된 영상을 업로드하세요", type=["mp4", "mov"])
+
+if video_file:
+    file_path = "uploaded_video.mp4"
+    with open(file_path, "wb") as f:
+        f.write(video_file.getbuffer())
+    st.video(file_path)
+
+    if st.button("영상 분석하기"):
+        response = run_agent(f"영상 {file_path} 에서 Pick된 상품을 분석해라.")
+        st.success(response)
+
+if st.button("장바구니 총액 보기"):
+    total = run_agent("장바구니 총액을 계산해라.")
+    st.info(total)
+-----------------------------------------------------------
+
+
+===========================================================
+📘 7. README.md 생성
+===========================================================
+
+프로젝트 설명  
+설치 방법  
+실행 방법  
+시나리오  
+구성 파일 설명  
+
+모두 작성해줘.
+
+
+=========================================================
+위 전체 파일/코드를 생성하고 프로젝트를 완성해줘.
+=========================================================
+
+
+[실행 방법]
+streamlit run app.py
+
+[추가 질의-1]
+영상이나 이미지를 업로드하지 않고 실시간 카메라 영상으로 감지하도록 수정해줘
+
+초기화 버튼을 누르면 가격이 0으로 초기화 되도록해줘

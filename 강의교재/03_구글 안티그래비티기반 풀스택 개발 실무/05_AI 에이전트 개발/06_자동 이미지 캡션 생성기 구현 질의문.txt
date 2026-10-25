@@ -1,0 +1,85 @@
+[자동 이미지 캡션 생성기 구현 프로젝트]
+
+프로젝트 폴더명 : Image_Caption_Project
+
+모듈 설치 명령(1단계 완료후 실행) : pip install -r requirements.txt
+
+
+#1단계: 프로젝트 뼈대 생성
+
+프롬프트:
+Image_Caption_Project 폴더 구조로 파이썬+Streamlit 기반 “자동 이미지 캡션 생성기” 프로젝트를 생성해줘.
+구성은 다음으로 해줘.
+
+app.py (Streamlit 메인)
+services/captioner.py (Gemini 호출/캡션 생성 로직)
+utils/image_utils.py (Gemini 로드 + base64 인코딩)
+templates/help.html (설명용 HTML)
+requirements.txt
+.env
+
+requirements.txt를 완성해줘. 필요한 모듈은 Streamlit, OpenCV, python-dotenv  중심으로 구성해줘.
+requirements.txt에는 최신 버전을 설치할수 있도록 버전을 명시하지마. 
+
+
+#2단계: 이미지 업로드 + OpenCV 로딩
+
+프롬프트:
+app.py에 Streamlit UI를 만들고, 사용자가 이미지를 업로드하면 OpenCV로 이미지를 읽어서 화면에 미리보기로 보여줘.
+업로드 파일이 없거나 OpenCV 로딩 실패 시 오류 메시지를 보여주게 해줘.
+
+(오류시 : 이미지 업로드시 오류나. 수정해줘.)
+
+
+#3단계: base64 인코딩 유틸 구현
+
+프롬프트:
+utils/image_utils.py를 구현해줘.
+
+기능:
+업로드된 파일 바이트를 OpenCV 이미지로 디코딩하는 함수
+OpenCV 이미지를 PNG/JPG로 인코딩 후 base64 문자열로 만드는 함수
+예외 처리(인코딩 실패 등)도 포함해줘.
+
+
+#4단계: Gemini 캡션 생성 모듈 구현
+
+프롬프트:
+services/captioner.py를 구현해줘.
+
+요구:
+.env에서 GEMINII_API_KEY 로드
+base64 이미지 문자열을 입력받아 Gemini API 호출로 “짧은 한국어 캡션 1줄” 생성
+실패 시 예외를 던지지 말고, 에러 메시지 형태로 상위에서 처리 가능하게 해줘
+모델/파라미터는 상단 상수로 관리하게 해줘
+
+
+#5단계: Streamlit에서 “캡션 생성” 버튼 연결
+
+프롬프트:
+app.py에서 “캡션 생성” 버튼을 누르면
+업로드 이미지를 base64로 변환
+services/captioner.py로 캡션 생성 호출
+결과 캡션을 화면에 출력
+진행 중에는 spinner를 보여주고, 오류 시에는 st.error로 표시해줘.
+
+
+#7단계: 안정성 옵션 추가
+
+프롬프트:
+다음 안정성 옵션을 추가해줘.
+업로드 이미지 크기가 너무 크면(예: 5MB 초과) 경고 후 중단
+Gemini 호출 전 base64 길이가 너무 크면(예: 상한 설정) 경고 후 중단
+로그 파일을 logs/app.log에 남기기(기본 INFO, 에러는 stack 포함)
+Streamlit 화면에는 사용자가 이해할 수 있는 오류 메시지 출력
+
+
+#8단계: 문서 작성
+
+프롬프트:
+이 프로젝트에 관련된 md 문서를 만들어줘.
+README에는 아래 항목도 추가해줘.
+설치 명령 : pip install -r requirements.txt
+.env 설정 
+실행 순서
+자주 발생하는 오류(키 미설정, 파일 형식 문제) 2~3개
