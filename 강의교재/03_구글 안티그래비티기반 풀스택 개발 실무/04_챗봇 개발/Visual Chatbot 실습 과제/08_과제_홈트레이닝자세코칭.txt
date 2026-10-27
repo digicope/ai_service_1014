@@ -1,0 +1,79 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + MediaPipe Pose + Gemini 홈트레이닝 코칭 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 웹캠으로 스쿼트 무릎 각도를 재고, 자세 상태를 화면에 표시하며 Gemini가 짧은 칭찬/조언을 해주는 코칭앱을 만들어라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), 한글 폰트 C:/Windows/Fonts/malgun.ttf
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=f"운동 자세 상태: '{status}'. 사용자를 짧게 칭찬하거나 조언하는 한국어 한 문장을 만들어줘."
+)
+message = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 웹캠 포즈 인식 홈트레이닝 자세 코칭 (스쿼트)
+
+1. MediaPipe Pose 로 전신 랜드마크를 잡는다.
+2. 프레임은 좌우 반전(cv2.flip(frame, 1)) 한다.
+3. 왼쪽 엉덩이-무릎-발목 사이 각도를 계산한다.
+   hip  = LEFT_HIP
+   knee = LEFT_KNEE
+   ankle= LEFT_ANKLE
+   cosine_angle → degrees
+4. 판정:
+   - 사람 없음: "사람이 감지되지 않았습니다."
+   - angle < 70        → "Squat too shallow!" (너무 덜 앉음)
+   - 70 <= angle <= 120 → "Good squat!"
+   - angle > 120       → "Squat too deep!" (너무 깊이 앉음)
+5. 포즈 스켈레톤을 영상에 그린다.
+6. 상태 텍스트와 Gemini 격려 문구를 한글 폰트(PIL + malgun.ttf)로 그린다.
+7. Gemini 호출은 자세 상태가 바뀔 때만 한다. 매 프레임 호출 금지.
+8. MJPEG 스트리밍.
+
+Flask 라우트
+- GET /            : templates/index.html
+- GET /video_feed  : MJPEG
+
+페이지에 사용법 안내를 넣는다:
+- 허리 아래(무릎/발목)까지 웹캠에 나오게 선다
+- 양발 어깨너비, 엉덩이를 뒤로 빼며 스쿼트
+- 허리는 곧게, 무릎이 발끝을 과도하게 넘지 않게
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: AI 홈트 코칭 - 스쿼트 자세 분석
+- 실시간 영상 width=800
+- 판정 기준 표를 텍스트로 표시
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, mediapipe, numpy, pillow)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- 각도 계산 시 0으로 나누기 방지
+- Gemini 실패해도 자세 판정 스트리밍은 계속
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

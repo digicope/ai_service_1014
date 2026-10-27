@@ -1,0 +1,68 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + MediaPipe Face Detection + Gemini 상황 보고 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 웹캠에서 얼굴 수로 사람 수를 세고, 사람 수가 바뀔 때마다 Gemini가 한 문장 상황 보고서를 작성하게 하라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), 한글 폰트 C:/Windows/Fonts/malgun.ttf
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=f"지금 카메라에 {people_count}명이 감지되었습니다. 이 상황을 짧게 설명하는 한국어 한 문장을 만들어줘."
+)
+report = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 웹캠으로 사람 수 세고, 상황 보고서 작성하는 웹앱
+
+1. MediaPipe FaceDetection (model_selection=0, min_detection_confidence=0.5)
+2. 프레임 좌우 반전
+3. detections 개수 = 현재 사람 수
+4. 사람 수가 이전과 다를 때만 Gemini 상황 보고서를 요청한다.
+5. 초기값: current_people=0, last_report="아직 아무도 없습니다."
+6. PIL + malgun.ttf 로 한글 오버레이
+   - "사람 수: N"
+   - last_report
+7. 가능하면 얼굴 박스도 그린다.
+8. MJPEG 스트리밍.
+
+Flask 라우트
+- GET /            : templates/index.html
+- GET /video_feed  : MJPEG
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 실시간 사람 수 감지 및 상황 보고
+- 실시간 영상 width=800
+- 짧은 사용 안내: 얼굴이 카메라에 보이면 인원수가 갱신됩니다.
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, mediapipe, numpy, pillow)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- Gemini 예외 시 last_report에 오류 문구, 스트리밍은 유지
+- 사람 수가 흔들리지 않도록 단순 카운트 변화를 그대로 쓰되, 서버가 죽지 않게 한다.
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

@@ -1,0 +1,80 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + OpenCV + Gemini Vision 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 웹캠 실시간 화면을 보다가 [실험 장면 캡처하기]를 누르면, 그 사진을 Gemini가 과학 실험 리포트처럼 작성해주는 마이크로실험실 웹앱을 만들어라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), http://127.0.0.1:5000
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+from google.genai import types
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+리포트 생성:
+prompt = """당신은 실험 관찰 리포트를 작성하는 AI입니다.
+아래는 사용자가 보여준 장면 사진입니다.
+이 장면에서 어떤 실험을 진행한 것처럼 보이며, 그 결과는 어떤지 과학적으로 상상해서 설명해 주세요.
+한국어로, 목적/재료/관찰/결과/결론 형식으로 작성하세요."""
+
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=[
+        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+        prompt
+    ]
+)
+report = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 사물 영상 기반 실험 리포트 생성 시스템 (AI 마이크로실험실)
+
+1. OpenCV VideoCapture(0) 실시간 미리보기 스트림.
+2. POST /capture 시 현재 프레임을 저장한다.
+   - 저장 경로: static/captured/YYYYMMDD_HHMMSS.jpg
+   - 폴더가 없으면 생성
+3. 저장한 이미지를 Gemini Vision에 보내 실험 리포트를 생성한다.
+4. 같은 페이지에 캡처 이미지와 리포트를 보여준다.
+5. 전역 변수 latest_image_path, latest_report 로 마지막 결과를 유지한다.
+
+Flask 라우트
+- GET  /            : index.html (image_url, report 전달)
+- GET  /video_feed  : MJPEG 미리보기
+- POST /capture     : 캡처 + 분석 후 index.html 다시 렌더
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 카메라에 실험 장면을 보여주고 리포트를 받아보세요
+- 실시간 웹캠 미리보기
+- form POST /capture 버튼: [실험 장면 캡처하기]
+- 캡처된 이미지가 있으면 표시
+- AI 실험 리포트가 있으면 표시 (줄바꿈 유지, white-space: pre-wrap)
+- 버튼 클릭 후 "리포트 생성 중..." 안내가 있으면 더 좋다
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+static/captured/     (빈 폴더 유지용 .gitkeep)
+requirements.txt     (flask, python-dotenv, google-genai, opencv-python)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- 카메라 캡처 실패 시 500과 안내 문구
+- Gemini 실패 시 페이지에 에러 메시지를 보여주고 서버는 유지
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

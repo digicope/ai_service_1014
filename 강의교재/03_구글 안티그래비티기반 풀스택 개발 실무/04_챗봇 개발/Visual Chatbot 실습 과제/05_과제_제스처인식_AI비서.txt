@@ -1,0 +1,83 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + MediaPipe Hands + Gemini 실시간 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 웹캠에서 편 손가락 개수를 세고, 개수별로 다른 비서 명령을 Gemini에게 물어 화면에 한국어로 보여주는 AI 비서를 만들어라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), 맑은 고딕 폰트 C:/Windows/Fonts/malgun.ttf
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=[
+        "당신은 친절한 AI 비서입니다.",
+        prompt
+    ]
+)
+answer = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 실시간 제스처 인식으로 컨트롤하는 AI 비서
+
+1. MediaPipe Hands 로 손 랜드마크를 잡는다. (max_num_hands=1, min_detection_confidence=0.7)
+2. 편 손가락 개수를 센다.
+   - 검지/중지/약지/새끼: tip(8,12,16,20) 의 y 가 pip(tip-2) 보다 작으면 펴진 것
+   - 이 예제에서는 엄지를 제외한 4개만 세도 되고, 1~4개 + 주먹(0) 기준으로 동작하면 된다.
+   - 손가락 5개를 모두 세는 방식도 허용. 핵심은 1~5 제스처 매핑이다.
+3. 손가락 수가 이전과 달라지고 1 이상이면 Gemini를 호출한다. (같은 숫자 반복 호출 금지)
+4. 제스처 맵:
+   1 → "오늘 뉴스를 알려줘"
+   2 → "오늘 날씨 어때?"
+   3 → "유명한 명언 하나 알려줘"
+   4 → "간단한 운동 루틴 알려줘"
+   5 → "나에게 인사해줘"
+5. 영상에 한글을 그린다. OpenCV putText는 한글이 깨지므로 PIL + malgun.ttf 사용.
+   - "손가락 수: N"
+   - Gemini 응답 문장
+6. MJPEG 스트리밍.
+
+파일 분리
+- gesture_detector.py : GestureDetector 클래스, count_fingers(frame)
+- gemini_client.py    : get_ai_response(finger_count)
+- app.py              : Flask + 스트리밍 + 한글 오버레이
+
+Flask 라우트
+- GET /            : templates/index.html
+- GET /video_feed  : MJPEG
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 웹캠으로 손을 보여주세요
+- 안내: 손가락 1개=뉴스, 2개=날씨, 3개=명언, 4개=운동, 5개=인사
+- <img src="{{ url_for('video_feed') }}" width="640" height="480">
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+gesture_detector.py
+gemini_client.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, mediapipe, numpy, pillow)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- Gemini 호출은 손가락 수가 바뀔 때만. 실패해도 스트리밍이 멈추지 않게 한다.
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

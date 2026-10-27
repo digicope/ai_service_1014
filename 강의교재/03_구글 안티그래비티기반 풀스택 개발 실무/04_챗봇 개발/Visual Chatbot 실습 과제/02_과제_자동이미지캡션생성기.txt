@@ -1,0 +1,78 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + OpenCV + Gemini Vision 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 사용자가 업로드한 이미지를 OpenCV로 읽고, Gemini로 캡션을 생성하는 웹 서비스를 만들어라.
+실행 환경: Windows, Python 3.11, 브라우저에서 http://127.0.0.1:5000 접속.
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+from google.genai import types
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+이미지 캡션 생성 예시:
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=[
+        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+        "이미지의 내용에 대한 캡션을 한국어로 짧게 달아줘"
+    ]
+)
+caption = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 자동 이미지 캡션 생성기
+
+1. 웹 사용자가 이미지를 업로드한다.
+2. 서버는 OpenCV로 이미지를 메모리에서 읽는다.
+   npimg = np.frombuffer(file.read(), np.uint8)
+   image = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+3. OpenCV 전처리와 특징 추출을 수행한다.
+   - 그레이스케일 변환
+   - GaussianBlur
+   - Canny 엣지
+   - ORB 특징점 개수 추출
+4. JPEG 인코딩한 원본 이미지를 Gemini에 보내 짧은 한국어 캡션을 받는다.
+5. 캡션과 특징점 개수를 합쳐 Gemini에게 한 번 더 물어 최종 설명을 만든다.
+   예: "{caption}이 있는 이 이미지에는 약 {feature_count}개의 주요 특징이 감지되었습니다. 주요 특징들을 다시 자세히 설명해주세요."
+6. JSON으로 반환: { "caption": "...", "feature_count": 123, "detail": "..." }
+
+Flask 라우트
+- GET  /         : templates/index.html
+- POST /upload   : multipart form, 필드명 file
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 자동 이미지 캡션 생성기
+- 파일 선택 input
+- 선택한 이미지 미리보기 (max-width 400px)
+- 생성된 캡션과 상세 설명을 표시
+- 업로드 중 "분석 중..." 표시
+- 오류 시 "오류 발생!" 표시
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, numpy)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- 파일이 없으면 400 JSON 에러
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

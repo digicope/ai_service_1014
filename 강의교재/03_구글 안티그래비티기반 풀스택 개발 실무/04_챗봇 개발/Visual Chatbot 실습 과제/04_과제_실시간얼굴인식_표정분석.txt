@@ -1,0 +1,74 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + OpenCV Haar Cascade + Gemini Vision 실시간 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 웹캠에서 얼굴을 찾고, 얼굴 표정을 Gemini가 Happy/Sad/Surprised/Angry/Neutral 로 분류해 화면에 그리는 웹 서비스를 만들어라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), 브라우저에서 http://127.0.0.1:5000 접속.
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+from google.genai import types
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+표정 분석:
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=[
+        types.Part.from_bytes(data=face_jpeg_bytes, mime_type="image/jpeg"),
+        "이미지의 표정을 보고 기쁘면 [Happy], 슬프면 [Sad], 놀란 표정이면 [Surprised], 화났으면 [Angry], 무표정은 [Neutral] 으로만 말해줘. 다른 설명은 하지 마."
+    ]
+)
+emotion = response.text.strip()
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 실시간 얼굴 인식 및 표정 분석
+
+1. OpenCV VideoCapture(0) 로 웹캠을 연다.
+2. Haar Cascade 로 얼굴을 검출한다.
+   face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+   gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+   faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+3. 각 얼굴 ROI를 JPEG로 인코딩해 Gemini에 보내고 감정 라벨을 받는다.
+4. 성능 필수:
+   - 매 프레임마다 Gemini를 호출하지 않는다.
+   - 2초에 한 번만 분석하거나, 별도 스레드에서 최신 프레임만 분석한다.
+   - 화면에는 마지막 분석 결과를 계속 그린다.
+5. 얼굴에 파란 사각형, 그 위에 초록 감정 텍스트를 그린다.
+6. Flask MJPEG 스트리밍으로 브라우저에 보여준다.
+
+Flask 라우트
+- GET /            : templates/index.html
+- GET /video_feed  : multipart/x-mixed-replace; boundary=frame
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 카메라 영상 : 얼굴 표정 분석
+- <img src="{{ url_for('video_feed') }}"> 로 실시간 영상 표시
+- 간단한 안내: Happy / Sad / Surprised / Angry / Neutral
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, numpy)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, host=0.0.0.0, port=5000
+- Gemini 호출 실패 시 이전 감정 또는 Neutral 유지, 서버가 죽지 않게 try/except
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

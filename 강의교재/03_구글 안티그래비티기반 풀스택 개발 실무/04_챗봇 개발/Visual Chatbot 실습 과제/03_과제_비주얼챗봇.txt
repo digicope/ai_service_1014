@@ -1,0 +1,94 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + 웹캠 + Gemini Vision 멀티모달 챗봇을 처음부터 완성하는 시니어 개발자다.
+목표: 텍스트 질문과 웹캠 사진을 함께 주고받을 수 있는 비주얼 챗봇 웹앱을 만들어라.
+실행 환경: Windows, Python 3.11, 브라우저에서 http://127.0.0.1:5000 접속.
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+from google.genai import types
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+텍스트 대화:
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=contents  # 이전 대화 + 현재 질문
+)
+
+이미지 설명:
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=[
+        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+        "이미지의 내용에 대하여 자세히 설명해주세요"
+    ]
+)
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 비주얼 챗봇
+
+1. 텍스트 채팅
+   - 사용자가 질문을 입력하면 Gemini가 답한다.
+   - 대화 히스토리를 유지한다. (클라이언트가 history 배열을 서버로 보낸다)
+
+2. 웹캠 사진 질문
+   - 브라우저 getUserMedia로 웹캠을 보여준다.
+   - [사진 찍기] 버튼을 누르면 canvas에 캡처하고 base64 JPEG를 서버로 보낸다.
+   - 서버는 base64를 디코딩한 뒤 Gemini Vision으로 이미지 내용을 자세히 설명하게 한다.
+   - 설명 결과를 채팅 내역에 추가한다.
+
+3. 채팅 초기화
+   - history를 빈 배열로 되돌린다.
+
+Flask 라우트
+- GET  /               : templates/index.html
+- POST /ask            : JSON { text, history } → { response, history }
+- POST /upload_image   : JSON { image(base64), history } → { response, history }
+- POST /clear          : { history: [] }
+
+서버는 받은 base64가 data URL(data:image/jpeg;base64,...) 형식이면 헤더를 제거하고 디코딩한다.
+
+==================================================
+3) UI / JS
+==================================================
+templates/index.html
+- 제목: 비주얼 챗봇
+- textarea + [질문하기] [채팅 초기화]
+- video(320x240, autoplay) + [사진 찍기]
+- 숨김 canvas
+- 채팅 내역 영역 (#chatHistory) 왼쪽 정렬, 사용자/AI 구분 표시
+
+static/camera.js
+- 페이지 로드 시 navigator.mediaDevices.getUserMedia({ video: true })
+- sendQuestion(): /ask 호출
+- captureImage(): canvas.toDataURL('image/jpeg') 후 /upload_image 호출
+- clearChat(): /clear 호출 후 화면 비우기
+- 로딩 중 버튼 중복 클릭 방지
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+static/camera.js
+requirements.txt   (flask, python-dotenv, google-genai)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- 한국어 UI, 한국어 응답
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

@@ -1,0 +1,83 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + MediaPipe Face Mesh + Gemini 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 웹캠 얼굴 랜드마크로 감정을 규칙 기반으로 판정하고, 그 감정에 공감하는 Gemini 대화를 보여주는 웹앱을 만들어라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), http://127.0.0.1:5000
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=[
+        "너는 감정을 이해하고 공감하는 따뜻한 대화 전문가야. 한국어로 답해.",
+        f"사용자가 {emotion}한 감정 상태이다. 이 감정에 맞게 공감하는 대화를 해줘."
+    ]
+)
+ai_message = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 얼굴 표정으로 감정 분석 (MediaPipe) + 감정에 따른 AI 응답
+
+A. emotion_detector.py
+- MediaPipe FaceMesh: max_num_faces=1, refine_landmarks=True
+- 랜드마크를 프레임에 녹색 점으로 그린다.
+- 사용할 인덱스:
+  입: 61, 291, 13, 14
+  눈: 159, 145, 386, 374
+  눈썹: 65, 295
+  이마/턱: 10, 152
+- face_height = 이마-턱 거리
+- mouth_open, mouth_curve, avg_eye_open, eyebrow_distance 를 face_height로 정규화
+- 판정 우선순위:
+  1) mouth_curve < -0.005 이고 mouth_open > 0.015  → happy
+  2) eyebrow_distance < 0.25 이고 avg_eye_open < 0.035 → angry
+  3) avg_eye_open > 0.05 → surprised
+  4) 그 외 → neutral
+- 영상에 "Emotion: {emotion}" 표시
+- detect_emotion(frame) 는 감정을 반환하고 프레임을 수정한다.
+- get_current_emotion() 는 전역 current_emotion 반환
+- 얼굴이 없으면 "neutral"
+
+B. app.py
+- /video_feed 에서 매 프레임 detect_emotion 호출 후 MJPEG 전송
+- GET  /current_emotion  → { "emotion": "happy" }
+- POST /get_response JSON { "emotion": "happy" } → Gemini 공감 대화 { "response": "..." }
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 실시간 감정 분석
+- 실시간 영상
+- 현재 감정 텍스트. 5초마다 /current_emotion 폴링
+- 버튼 [감정 기반 응답 요청] → POST /get_response
+- AI 응답 문단 표시
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+emotion_detector.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, mediapipe, numpy)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- Gemini 실패 시 JSON 에러, 스트리밍은 유지
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.

@@ -1,0 +1,72 @@
+[Antigravity 바이브 코딩 프롬프트]
+
+역할: 너는 파이썬 Flask + MediaPipe Hands + Gemini 스마트 조명 컨트롤러 웹앱을 처음부터 완성하는 시니어 개발자다.
+목표: 손 제스처(주먹/손바닥/V자)로 가상 조명 상태(OFF/ON/MOOD)를 바꾸고, 상태가 바뀔 때 Gemini가 짧은 인삿말을 만들게 하라.
+실행 환경: Windows, Python 3.11, 기본 웹캠(index 0), 한글 폰트 C:/Windows/Fonts/malgun.ttf
+
+==================================================
+1) 반드시 지킬 API / 환경변수 규칙
+==================================================
+- 모델은 반드시 gemini-3.5-flash 만 사용한다.
+- API 키는 코드에 하드코딩하지 말고 아래처럼 읽는다.
+
+from dotenv import load_dotenv
+import os
+from google import genai
+
+load_dotenv(r"C:\env\.env")
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+response = client.models.generate_content(
+    model="gemini-3.5-flash",
+    contents=f"조명 상태가 '{status}'입니다. 사용자를 위한 짧은 한국어 한 문장의 인삿말을 만들어줘."
+)
+message = response.text
+
+==================================================
+2) 기능 요구사항
+==================================================
+주제: 손가락 포즈로 명령 내리는 스마트 조명 컨트롤러
+
+1. MediaPipe Hands, max_num_hands=1
+2. 프레임 좌우 반전
+3. 편 손가락 개수 계산 count_open_fingers(hand_landmarks)
+   - 엄지: THUMB_TIP.x < THUMB_IP.x 이면 펴짐 (미러 영상 기준, 필요하면 손 방향에 따라 보정)
+   - 검지/중지/약지/새끼: TIP.y < DIP.y 이면 펴짐
+4. 조명 매핑
+   - 편 손가락 0개 (주먹 ✊) → OFF
+   - 편 손가락 5개 (손바닥 ✋) → ON
+   - 편 손가락 2개 (V자 ✌️) → MOOD
+5. light_status 가 바뀔 때만 Gemini 인삿말을 생성한다.
+6. 손 랜드마크를 영상에 그린다.
+7. PIL + malgun.ttf 로 한글 표시
+   - "조명 상태: ON/OFF/MOOD"
+   - last_message
+8. 초기값: light_status="OFF", last_message="조명이 꺼져 있습니다."
+
+Flask 라우트
+- GET /            : templates/index.html
+- GET /video_feed  : MJPEG
+
+==================================================
+3) UI (templates/index.html)
+==================================================
+- 제목: 스마트 조명 컨트롤러 (손 제스처 기반)
+- 실시간 영상 width=800
+- 안내: ✊ 주먹 → 조명 OFF | ✋ 손바닥 → 조명 ON | ✌️ V자 → 무드 조명
+
+==================================================
+4) 파일 구조
+==================================================
+app.py
+templates/index.html
+requirements.txt   (flask, python-dotenv, google-genai, opencv-python, mediapipe, numpy, pillow)
+README.md
+
+==================================================
+5) 제약
+==================================================
+- debug=False, port=5000
+- Gemini 예외 시 last_message에 오류 문구, 스트리밍은 유지
+- 완성된 실행 가능한 코드만 작성하고, 지금 바로 전체 파일을 생성하라.
