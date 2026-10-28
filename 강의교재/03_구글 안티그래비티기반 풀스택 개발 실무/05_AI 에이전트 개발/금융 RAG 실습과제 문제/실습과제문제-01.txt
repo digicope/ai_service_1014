@@ -1,0 +1,201 @@
+[실습과제] 한국은행 경제전망보고서 PDF 문서 기반 Q&A RAG 구현
+
+교과목: RAG 파이프라인 설계와 구현
+권장 파일명: RAG_파이프라인_설계와_구현_한국은행_경제전망보고서_QA.ipynb
+
+
+────────────────────────────────────────
+1. 제공 자료
+────────────────────────────────────────
+
+데이터 파일
+  - 2026년 5월 경제전망보고서(Indigo Book)_F4.pdf
+    (한국은행 경제전망보고서, 약 168페이지)
+
+PDF 다운로드 (한국은행)
+  https://www.bok.or.kr/portal/bbs/P0000596/view.do?nttId=10097176&searchCnd=1&searchKwd=&depth2=200699&depth3=200071&date=&sdate=&edate=&sort=1&pageUnit=10&depth=200071&pageIndex=1&programType=newsData&menuNo=200071&oldMenuNo=200066
+
+※ 위 PDF 전체를 인덱싱에 사용한다.
+※ 노트북과 동일 폴더에 PDF를 두고 경로를 설정한다.
+
+
+────────────────────────────────────────
+2. 과제 목표
+────────────────────────────────────────
+
+한국은행 경제전망보고서(Indigo Book) PDF를 대상으로
+로딩 → 청킹 → 임베딩 → Vector DB 저장 → 검색 → 생성까지
+완전한 RAG Q&A 파이프라인을 구현한다.
+
+학습 포인트
+  1) RAG 전체 아키텍처(인덱싱 파이프라인 / 질의 파이프라인)를 이해한다.
+  2) Chunking 전략(고정 / 시맨틱 / 계층적)을 비교하고 보고서 문서에 적합한 방식을 선택한다.
+  3) Vector DB(Chroma / Pinecone / Weaviate) 선택 기준을 정리하고, 본 실습에서는 Chroma를 사용한다.
+  4) Retriever(Similarity / MMR / MultiQuery)를 비교하고 Q&A에 적합한 Retriever를 적용한다.
+  5) 검색 문맥에만 근거하는 grounded Q&A 체인을 구성한다.
+
+
+────────────────────────────────────────
+3. 과제 내용
+────────────────────────────────────────
+
+[1] 이론 정리 (노트북 Markdown으로 작성)
+
+  다음 내용을 표 또는 요약으로 정리한다.
+
+  (1) RAG 전체 아키텍처
+      - 인덱싱: Loading → Chunking → Embedding → Vector DB
+      - 질의: Embedding → Retrieval → Generation
+
+  (2) Chunking 전략 비교
+      - 고정(Fixed) / 시맨틱(Semantic) / 계층적(Hierarchical)
+      - 분할 기준, 난이도, 검색 정확도, 속도, 문맥 유지, 추천 문서 유형
+
+  (3) Vector DB 선택 기준
+      - Chroma / Pinecone / Weaviate
+      - 배포 형태, 비용, 규모, 하이브리드 검색, 추천 상황
+
+  (4) Retriever 종류 및 성능 특성
+      - Similarity / MMR / MultiQuery / Contextual Compression
+      - 동작, 장점, 단점, 적합 상황
+
+
+[2] 환경 설정
+
+  - Gemini API Key를 환경 변수로 로드한다.
+  - PDF 경로, Chroma Persistent 저장 경로, 컬렉션 이름을 설정한다.
+  - 예시
+      PDF: 2026년 5월 경제전망보고서(Indigo Book)_F4.pdf
+      Chroma 저장 경로: chroma_bok_outlook
+      컬렉션 이름: bok_economic_outlook_202605
+
+
+[3] Loading — PDF 문서 로드
+
+  - PyPDFLoader(또는 동등한 PDF 로더)로 페이지 단위 문서를 로드한다.
+  - 총 페이지 수, 표지/요약 부문 미리보기를 출력한다.
+  - 텍스트 추출 품질을 확인한다.
+      · 거의 빈 페이지(<30자 등) 수와 페이지 번호를 파악한다.
+      · 그림·표만 있는 페이지는 인덱싱에서 제외해도 된다.
+  - 본 보고서는 폰트 인코딩이 정상이므로 별도 Vision OCR 없이 진행한다.
+
+
+[4] Chunking — 전략별 비교 실습
+
+  요약(Ⅰ) 부문 등 샘플 페이지를 대상으로 다음을 비교한다.
+
+  (1) 고정 Chunking — CharacterTextSplitter
+  (2) 고정 Chunking(권장) — RecursiveCharacterTextSplitter
+      - 예: chunk_size=1000, chunk_overlap=150
+  (3) 시맨틱 Chunking — SemanticChunker (샘플 일부만, 비용 절감)
+  (4) 계층적 Chunking — 페이지(상위) → Recursive 분할(하위)
+      - 하위 청크에 parent_page 등 메타데이터를 유지한다.
+
+  비교 결과(청크 수, 절단 양상, 메타데이터)를 요약하고,
+  전체 인덱싱에 사용할 전략을 선택·근거를 적는다.
+  (권장: 계층적 1차(페이지) + Recursive 2차 하이브리드)
+
+
+[5] Embedding + Vector DB 저장
+
+  - 선택한 Chunking으로 전체(텍스트 존재) 페이지를 청킹한다.
+  - 임베딩 모델: gemini-embedding-2 (또는 최신 모델, 이후 고정)
+  - Vector DB: Chroma DB (로컬 Persistent)
+  - 재실행 시 중복을 막기 위해 인덱스 재생성/재사용 옵션을 둔다.
+  - 배치 저장(예: 100개 단위)을 권장한다.
+  - 최종 컬렉션 문서(청크) 수를 출력한다.
+
+
+[6] Retrieval — Retriever 비교
+
+  동일 테스트 질문으로 다음 Retriever의 검색 결과를 비교한다.
+
+  (1) Similarity Retriever (예: k=6)
+  (2) MMR Retriever (예: k=6, fetch_k=30, lambda_mult=0.7)
+  (3) MultiQuery Retriever (LLM 기반 질문 재작성 후 검색)
+
+  테스트 질문 예시
+    "2026년 소비자물가 상승률 전망은 어떻게 되나요?"
+
+  각 Retriever별 상위 청크의 page, 내용 미리보기를 출력하고
+  중복·다양성·관련성 차이를 짧게 해석한다.
+
+
+[7] Generation — PDF Q&A RAG 체인
+
+  - grounded 프롬프트를 사용한다.
+      · 검색된 문서 내용만 근거로 답변
+      · 없는 내용은 추측하지 않음
+      · 수치(전망치, 증감률 등)는 원문 표현을 유지
+      · 가능하면 출처 페이지를 함께 언급
+  - 기본 Retriever는 MMR을 권장한다.
+    (물가·성장률 등 유사 주제가 여러 페이지에 반복되므로 다양성 확보)
+  - 생성 모델 예시: gpt-4o-mini
+  - ask(question) 형태의 헬퍼로 질문/답변/참고 청크를 출력한다.
+
+
+[8] Q&A 동작 테스트
+
+  최소 아래 질문에 대해 답변과 출처 페이지를 실행·확인한다.
+
+  1) 2026년 소비자물가 상승률 전망은 어떻게 되나요?
+  2) 미국 경제의 성장률 전망과 리스크 요인은 무엇인가요?
+  3) 반도체 수출과 관련해 한국과 대만 기업의 차이는 무엇인가요?
+  4) 중동 정세가 국내 경제에 미치는 영향은 무엇인가요?
+  5) 이번 보고서의 중장기 심층연구 주제는 무엇인가요?
+  6) (옵션) MultiQuery로 "금리는 앞으로 어떻게 될까요?" 등 모호한 질문 테스트
+  7) (옵션) 자유 질문 1개 이상
+      예: 공급망 재편이 우리 경제에 주는 시사점은 무엇인가요?
+
+
+[9] 정리
+
+  Loading / Chunking / Embedding / Vector DB / Retriever / Generation에 대해
+  본 실습에서 선택한 기술과 이유를 표로 정리한다.
+
+
+────────────────────────────────────────
+4. 구현 조건 / 제약
+────────────────────────────────────────
+
+  - 데이터: 2026년 5월 경제전망보고서(Indigo Book)_F4.pdf 사용
+  - Vector DB: Chroma DB (로컬 Persistent) 사용
+  - 답변은 검색된 문맥에만 근거하도록 grounded 프롬프트를 사용한다.
+  - Chunking 비교(고정/시맨틱/계층적)와 Retriever 비교(Similarity/MMR/MultiQuery)를
+    코드로 실행한 결과가 노트북에 남아 있어야 한다.
+  - 시맨틱 Chunking은 샘플만으로도 인정 (전체 PDF 적용 필수 아님)
+  - 최종 Q&A 기본 Retriever는 MMR 권장 (다른 선택 시 이유 명시)
+
+
+────────────────────────────────────────
+5. 구현 후 동작 테스트 내용
+────────────────────────────────────────
+
+  1) PDF 로딩 결과 (페이지 수, 빈 페이지 처리, 미리보기)
+  2) Chunking 전략 비교 실행 결과 및 선택 이유
+  3) Chroma 인덱싱 과정 및 저장된 청크 수
+  4) Similarity / MMR / MultiQuery 검색 결과 비교
+  5) RAG Q&A 실행 결과 (질문·답변·출처 페이지)
+  6) 정리 표: 본 실습의 기술 선택과 근거
+
+
+────────────────────────────────────────
+6. 평가 포인트 (참고)
+────────────────────────────────────────
+
+  - RAG 파이프라인 end-to-end 구현 완성도
+  - Chunking·Retriever 비교의 충실도와 해석
+  - Chroma Persistent 저장·재사용 동작
+  - grounded 답변(환각 억제, 수치·출처 표현)
+  - 코드 가독성 및 Markdown 설명
+
+
+────────────────────────────────────────
+7. 참고 (단원 관련 주제)
+────────────────────────────────────────
+
+  - RAG 전체 아키텍처 — 로딩·청킹·임베딩·검색·생성
+  - Chunking 전략 비교 (고정 / 시맨틱 / 계층적)
+  - Vector DB 선택 기준 (Chroma / Pinecone / Weaviate)
+  - Retriever 종류 및 성능 특성 비교 (Similarity / MMR / MultiQuery)
+  - PDF 문서 기반 Q&A RAG 구현
