@@ -1,0 +1,146 @@
+[카카오톡 API(나에게 보내기) 설정 및 Python 바이브 코딩 실습]
+
+=========================================================
+1. 카카오 개발자 사이트 설정
+=========================================================
+
+실습 목표
+- 카카오 개발자 사이트에서 앱을 생성하고 카카오 로그인 및 메시지 전송 권한을 설정한다.
+- Python 프로그램에서 카카오톡 '나에게 보내기' API를 호출할 수 있도록 준비한다.
+
+1) 카카오 개발자 사이트 접속 및 앱 생성
+- https://developers.kakao.com/ 에 접속하여 로그인한다.
+- [앱] 메뉴에서 앱을 생성한다.
+- 앱 이름 예시: Python_Kakao_Message
+
+2) REST API 키 확인
+- 생성한 앱의 앱 키에서 REST API 키를 확인한다.
+- REST API 키는 Python 프로젝트의 환경변수 파일(.env)에 저장해 사용한다.
+- 키를 소스 코드에 직접 입력하거나 공개 저장소에 업로드하지 않는다.
+
+3) 카카오 로그인 활성화 및 Redirect URI 등록
+- 앱 설정에서 [카카오 로그인] 메뉴를 찾아 사용 설정을 ON으로 변경한다.
+- Redirect URI에 아래 주소를 등록한다.
+
+  http://localhost:8000/callback
+
+주의:
+- 위 주소는 아래 실습 프롬프트에서 사용할 로컬 Python 콜백 주소이다.
+- 프로그램에서 다른 포트 또는 콜백 경로를 사용한다면 사이트에 등록한 URI와 코드의 URI가 정확히 일치해야 한다.
+
+4) Client Secret 확인
+- 카카오 로그인 설정에 Client Secret 기능이 표시되는 경우 이를 활성화하고 발급된 값을 확인한다.
+- Client Secret 사용 여부 및 입력 위치는 현재 앱 설정 화면과 카카오 개발자 문서를 확인한다.
+- 발급된 값은 .env 파일에 저장하며 다른 사람에게 공유하지 않는다.
+- REST API 키와 Client Secret은 서로 다른 값이다.
+
+5) 카카오톡 메시지 전송 동의 항목 설정
+- [카카오 로그인]의 [동의 항목] 메뉴로 이동한다.
+- 카카오톡 메시지 전송 항목을 찾아 설정 가능한 동의 단계로 설정하고 저장한다.
+- 해당 항목이 보이지 않거나 설정할 수 없다면 앱의 권한·동의 항목 상태와 카카오 정책을 확인한다. 모든 앱에서 동일한 권한 설정이 가능하다고 가정하지 않는다.
+
+6) 설정 정보 정리
+실습 중 다음 정보를 준비한다.
+- REST API 키
+- Client Secret(앱 설정에서 사용하는 경우)
+- Redirect URI: http://localhost:8000/callback
+
+액세스 토큰과 리프레시 토큰은 프로그램의 OAuth 인증 과정에서 발급받는다. 토큰을 수업 자료나 공개 문서에 붙여 넣지 않는다.
+
+=========================================================
+2. 바이브 코딩 실습 프롬프트
+=========================================================
+
+아래 프롬프트 전체를 복사하여 입력한다.
+
+[실습 프롬프트 시작]
+
+Python으로 카카오톡 '나에게 보내기' API를 호출하는 초보자용 프로젝트를 만들어줘.
+
+[개발 환경]
+- Python 3.11 이상
+- HTTP 요청은 requests, 환경변수 관리는 python-dotenv를 사용
+- 로컬 OAuth 콜백 서버는 Flask를 사용
+- 프로젝트 이름: kakao_message_app
+
+[기능 요구사항]
+1. 카카오 OAuth 인증
+   - 카카오 로그인 인증 URL을 생성하고 브라우저에서 인증을 진행할 수 있게 한다.
+   - Redirect URI는 http://localhost:8000/callback 으로 한다.
+   - Authorization URL은 https://kauth.kakao.com/oauth/authorize 이다.
+   - Token URL은 https://kauth.kakao.com/oauth/token 이다.
+   - 필요한 scope에 talk_message를 포함한다.
+   - 콜백에서 authorization code를 받아 액세스 토큰을 요청한다.
+   - OAuth state 값을 사용하여 요청 위조를 방지한다.
+   - 앱 설정에서 Client Secret을 사용하는 경우 토큰 요청에 해당 값을 포함한다.
+   - Redirect URI는 카카오 개발자 사이트에 등록한 값과 정확히 일치해야 한다.
+
+2. 환경변수 관리
+   - c:\env\.env에서 환경 변수를 읽어와서 사용한다   
+   - 필요한 환경변수 예시는 다음과 같다.
+     KAKAO_REST_API_KEY=여기에_REST_API_키
+     KAKAO_CLIENT_SECRET=여기에_Client_Secret
+     KAKAO_REDIRECT_URI=http://localhost:8000/callback
+   - Client Secret이 앱 설정에서 사용되지 않는 경우 해당 항목을 선택적으로 처리한다.
+   - 실제 비밀값은 사용자가 직접 .env 파일에 입력하게 한다.
+   - 실제 키나 토큰을 코드에 하드코딩하거나 로그에 출력하지 않는다.
+
+3. 카카오톡 메시지 전송
+   - API 주소: https://kapi.kakao.com/v2/api/talk/memo/default/send
+   - HTTP 메서드: POST
+   - Authorization 헤더에 Bearer 액세스 토큰을 전달한다.
+   - Content-Type은 application/x-www-form-urlencoded;charset=utf-8 로 설정한다.
+   - template_object는 JSON 문자열로 전달한다.
+   - 기본 메시지 예시는 다음과 같다.
+     {
+       "object_type": "text",
+       "text": "Python에서 보낸 카카오톡 테스트 메시지입니다.",
+       "link": {
+         "web_url": "https://developers.kakao.com",
+         "mobile_web_url": "https://developers.kakao.com"
+       },
+       "button_title": "바로 확인"
+     }
+   - 메시지 전송 성공 여부와 HTTP 오류 응답을 사용자에게 이해하기 쉽게 표시한다.
+   - 401, 403, 400 등의 오류가 발생하면 가능한 원인과 확인 방법을 안내한다.
+   - 액세스 토큰 만료 시 리프레시 토큰으로 갱신하는 기능을 구현한다. 갱신이 불가능하면 재인증 방법을 안내한다.
+   - 토큰은 로컬에서 안전하게 보관하고 화면이나 로그에 노출하지 않는다.
+
+4. 사용자 인터페이스
+   - 초보자가 사용할 수 있는 간단한 메뉴 방식으로 구현한다.
+   - 메뉴 예시:
+     1. 카카오 로그인 인증
+     2. 테스트 메시지 보내기
+     3. 직접 입력한 메시지 보내기
+     4. 종료
+   - 메시지 입력값이 비어 있으면 전송하지 않는다.
+   - API 응답과 오류를 확인할 수 있도록 예외 처리를 한다.
+
+5. 프로젝트 파일 구성
+   다음 파일을 생성한다.
+   - app.py: 실행 및 사용자 메뉴
+   - kakao_client.py: OAuth 및 메시지 API 처리
+   - requirements.txt: 필요한 패키지 목록
+   - README.md: 설치, 설정, 실행 및 오류 해결 안내
+
+6. 실행 방법 안내
+   - 설명 문서로 README.md 작성
+   - 패키지 설치 명령을 제공한다.
+   - 실행 명령과 브라우저 인증 절차를 순서대로 설명한다.
+   - OAuth 콜백 서버가 실행 중일 때 인증을 진행하도록 안내한다.
+
+[선택 실습: 날씨 정보 카카오톡 전송]
+기본 메시지 전송이 성공한 뒤 다음 기능을 추가해줘.
+- OpenWeatherMap API를 사용해 사용자가 지정한 도시의 현재 날씨 또는 오늘의 날씨 정보를 조회한다.
+- OPENWEATHERMAP_API_KEY를 .env에 추가한다.
+- 조회한 날씨와 기온을 한국어 메시지로 구성해 카카오톡 '나에게 보내기' API로 전송한다.
+- 날씨 API 키가 없으면 기본 카카오톡 메시지 기능은 계속 사용할 수 있게 한다.
+- 오늘 또는 내일의 예보를 제공할 수 있는 API인지 확인하고, 지원하지 않는 정보를 임의로 만들어내지 않는다.
+- 날씨 API 오류와 카카오톡 API 오류를 구분해 안내한다.
+
+[실습 프롬프트 끝]
+
+참고
+- 카카오 개발자 사이트: https://developers.kakao.com/
+- 카카오 API 문서: https://developers.kakao.com/docs/latest/ko/kakaologin/common
+- 카카오톡 메시지 API 문서: https://developers.kakao.com/docs/latest/ko/kakaotalk-message/common
