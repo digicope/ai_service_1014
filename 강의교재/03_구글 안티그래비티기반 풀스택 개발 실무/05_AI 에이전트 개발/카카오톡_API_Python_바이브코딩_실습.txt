@@ -11,7 +11,7 @@
 1) 카카오 개발자 사이트 접속 및 앱 생성
 - https://developers.kakao.com/ 에 접속하여 로그인한다.
 - [앱] 메뉴에서 앱을 생성한다.
-- 앱 이름 예시: Python_Kakao_Message
+- 앱 이름 예시: Python_Message
 
 2) REST API 키 확인
 - 생성한 앱의 앱 키에서 REST API 키를 확인한다.
