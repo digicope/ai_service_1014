@@ -76,5 +76,7 @@ ModuleNotFoundError: No module named 'langchain.text_splitter' 오류나. 수정
 pdf_data 폴더에 들어 있는 모든 pdf 파일을 사용하여 chromadb 벡터스토어로 저장해주고 코드 실행시 기존 벡터스토어를 읽어와서 사용하도록 해줘
 검색 결과에 pdf 출처 페이지를 출력해줘
 
+예시 질문: 일주일 중 승강장 혼잡도가 특히 높아지는 요일은 언제인가요?
+
 
 
