@@ -1,0 +1,3557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌱 SEASAC TIMER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              obsidian: '#000000',
+              surface: '#0a0a0a',
+              surfaceElevated: '#121212',
+              border: 'rgba(0, 0, 0, 0.12)',
+              borderActive: 'rgba(0, 0, 0, 0.45)',
+              warningRed: '#e11d48'
+            }
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['Pretendard', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+body {
+      background: #f8fafc;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 0, 0, 0.03) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(0, 0, 0, 0.02) 0px, transparent 60%);
+      min-height: 100vh;
+      color: #0f172a;
+      font-family: 'Pretendard', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .bg-tech-grid {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .glass-card-elevated {
+      background: #ffffff;
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08), inset 0 1px 1px 0 #ffffff;
+    }
+
+    .tactile-btn {
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tactile-btn:active {
+      transform: scale(0.97);
+    }
+
+    .timer-font {
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: 'tnum' on, 'zero' on;
+      letter-spacing: -0.04em;
+    }
+
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .lecture-glow { box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.08); }
+    .break-glow { box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.06); }
+    .lunch-glow { box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.06); }
+    
+    /* 10-Second Warning Glow */
+    .warning-glow {
+      box-shadow: 0 0 50px 10px rgba(225, 29, 72, 0.22);
+      border-color: rgba(225, 29, 72, 0.45) !important;
+    }
+
+    /* Overtime Glow */
+    .overtime-glow { 
+      box-shadow: 0 16px 45px -8px rgba(225, 29, 72, 0.25); 
+      animation: pulse-border-overtime 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulse-border-overtime {
+      0%, 100% { border-color: rgba(225, 29, 72, 0.35); }
+      50% { border-color: rgba(225, 29, 72, 0.9); }
+    }
+
+    /* 10-Second Countdown Pulse for digits */
+    @keyframes countdown-pulse {
+      0%, 100% { 
+        transform: scale(1); 
+        filter: drop-shadow(0 0 2px rgba(225, 29, 72, 0.25));
+      }
+      50% { 
+        transform: scale(1.05); 
+        filter: drop-shadow(0 0 12px rgba(225, 29, 72, 0.7));
+      }
+    }
+    .animate-countdown-pulse {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      transform-origin: center center;
+      animation: countdown-pulse 1s infinite ease-in-out;
+    }
+
+    /* 10-Second Countdown Pulse for circular SVG ring */
+    @keyframes ring-soft-pulse {
+      0%, 100% {
+        filter: drop-shadow(0 0 3px rgba(225, 29, 72, 0.4));
+        opacity: 0.95;
+      }
+      50% {
+        filter: drop-shadow(0 0 14px rgba(225, 29, 72, 0.9));
+        opacity: 1;
+      }
+    }
+    .animate-ring-pulse {
+      animation: ring-soft-pulse 1s infinite ease-in-out;
+    }
+
+    /* Heartbeat Pulse for 10s Countdown (Fallback) */
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    .animate-heartbeat {
+      animation: heartbeat 1s infinite ease-in-out;
+    }
+
+    /* Subtle ambient red glow within the circle */
+    @keyframes soft-red-pulse {
+      0%, 100% { opacity: 0.12; transform: scale(0.95); }
+      50% { opacity: 0.35; transform: scale(1.08); }
+    }
+    .animate-ambient-red {
+      animation: soft-red-pulse 1.8s infinite ease-in-out;
+    }
+
+    /* Screen Strobe / Flash Overlay for Break End */
+    #screenFlashOverlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      box-shadow: inset 0 0 0 0px rgba(225, 29, 72, 0.85);
+      transition: opacity 0.15s ease-out;
+    }
+    .flash-active {
+      animation: strobe-effect 2.4s ease-out forwards;
+    }
+    @keyframes strobe-effect {
+      0% { opacity: 1; box-shadow: inset 0 0 90px 30px rgba(225, 29, 72, 0.85); background: rgba(225, 29, 72, 0.12); }
+      20% { opacity: 0.1; box-shadow: inset 0 0 20px 5px rgba(225, 29, 72, 0.2); background: transparent; }
+      40% { opacity: 1; box-shadow: inset 0 0 100px 35px rgba(245, 158, 11, 0.9); background: rgba(245, 158, 11, 0.15); }
+      60% { opacity: 0.1; box-shadow: inset 0 0 20px 5px rgba(245, 158, 11, 0.2); background: transparent; }
+      80% { opacity: 0.95; box-shadow: inset 0 0 80px 25px rgba(225, 29, 72, 0.8); background: rgba(225, 29, 72, 0.1); }
+      100% { opacity: 0; box-shadow: inset 0 0 0 0 transparent; background: transparent; }
+    }
+
+    /* Instant 1-shot red flash on overtime entry */
+    .overtime-flash {
+      animation: one-shot-flash 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes one-shot-flash {
+      0% { background-color: rgba(225, 29, 72, 0.22); }
+      100% { background-color: transparent; }
+    }
+
+    /* Fullscreen & Zoom Focus Mode Styling for Main Timer Card (Zero Overlap Guaranteed) */
+    #mainTimerCard:fullscreen,
+    #mainTimerCard:-webkit-full-screen,
+    #mainTimerCard.is-zoomed {
+      background: #ffffff !important;
+      padding: 1.5rem 2rem !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: space-evenly !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border: none !important;
+      border-radius: 0 !important;
+      z-index: 9999 !important;
+      overflow-y: auto !important;
+    }
+    #mainTimerCard.is-zoomed {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+    }
+    #mainTimerCard:fullscreen .zoom-hide,
+    #mainTimerCard:-webkit-full-screen .zoom-hide,
+    #mainTimerCard.is-zoomed .zoom-hide {
+      display: none !important;
+    }
+    #mainTimerCard:fullscreen #fullscreenWallClock,
+    #mainTimerCard:-webkit-full-screen #fullscreenWallClock,
+    #mainTimerCard.is-zoomed #fullscreenWallClock {
+      display: flex !important;
+    }
+    #mainTimerCard:fullscreen #circleContainer,
+    #mainTimerCard:-webkit-full-screen #circleContainer,
+    #mainTimerCard.is-zoomed #circleContainer {
+      width: min(44vh, 320px) !important;
+      height: min(44vh, 320px) !important;
+      margin-top: 0.25rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+    #mainTimerCard:fullscreen #timerInfoGrid,
+    #mainTimerCard:-webkit-full-screen #timerInfoGrid,
+    #mainTimerCard.is-zoomed #timerInfoGrid {
+      max-width: 34rem !important;
+      width: 100% !important;
+    }
+    #mainTimerCard:fullscreen #actionContainer,
+    #mainTimerCard:-webkit-full-screen #actionContainer,
+    #mainTimerCard.is-zoomed #actionContainer {
+      max-width: 34rem !important;
+      width: 100% !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.35); }
+  
+    /* High-Contrast Obsidian Dark Mode Styles */
+    html.dark, html.dark body {
+      background: #09090b !important;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(255, 255, 255, 0.03) 0px, transparent 60%) !important;
+      color: #f4f4f5 !important;
+    }
+    html.dark .bg-tech-grid {
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px) !important;
+    }
+    html.dark .glass-card {
+      background: rgba(18, 18, 22, 0.88) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: #f4f4f5 !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+    }
+    html.dark .glass-card-elevated {
+      background: rgba(24, 24, 28, 0.95) !important;
+      border-color: rgba(255, 255, 255, 0.16) !important;
+      color: #f4f4f5 !important;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #mainTimerCard {
+      background: rgba(18, 18, 22, 0.96) !important;
+      border-color: rgba(255, 255, 255, 0.15) !important;
+    }
+    html.dark #mainTimerCard:fullscreen,
+    html.dark #mainTimerCard:-webkit-full-screen,
+    html.dark #mainTimerCard.is-zoomed {
+      background: #09090b !important;
+      color: #f4f4f5 !important;
+    }
+    html.dark #bgTrackCircle {
+      stroke: rgba(255, 255, 255, 0.08) !important;
+    }
+    html.dark #timerDisplay {
+      color: #ffffff !important;
+    }
+    html.dark #targetEndPill {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+      color: #e4e4e7 !important;
+    }
+    html.dark #targetEndTimeText,
+    html.dark #elapsedTimeText,
+    html.dark #nextEventText,
+    html.dark #currentStartTimeBadge,
+    html.dark #quickSubTargetEnd,
+    html.dark #wallClock {
+      color: #ffffff !important;
+    }
+    html.dark .text-black {
+      color: #ffffff !important;
+    }
+    html.dark .text-zinc-800 {
+      color: #f4f4f5 !important;
+    }
+    html.dark .text-zinc-700 {
+      color: #e4e4e7 !important;
+    }
+    html.dark .text-zinc-600 {
+      color: #d4d4d8 !important;
+    }
+    html.dark .text-zinc-500 {
+      color: #a1a1aa !important;
+    }
+    html.dark .bg-white {
+      background-color: #18181b !important;
+      color: #f4f4f5 !important;
+    }
+    html.dark .bg-zinc-50 {
+      background-color: #121215 !important;
+    }
+    html.dark .bg-zinc-100 {
+      background-color: #27272a !important;
+    }
+    html.dark .border-black\/10,
+    html.dark .border-black\/15,
+    html.dark .border-black\/20,
+    html.dark .border-black\/25 {
+      border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+    html.dark #gaugeGradMonochrome stop:first-child {
+      stop-color: #ffffff !important;
+    }
+    html.dark #gaugeGradMonochrome stop:last-child {
+      stop-color: #71717a !important;
+    }
+    html.dark #gaugeGradInverted stop:first-child {
+      stop-color: #38bdf8 !important;
+    }
+    html.dark #gaugeGradInverted stop:last-child {
+      stop-color: #818cf8 !important;
+    }
+
+    /* Timetable Inset Active Row (Eliminates clipping bugs) */
+    .timetable-active-row {
+      box-shadow: inset 0 0 0 2px #000000 !important;
+      background-color: #f4f4f5 !important;
+      font-weight: 700 !important;
+    }
+    html.dark .timetable-active-row {
+      box-shadow: inset 0 0 0 2px #34d399 !important;
+      background-color: rgba(52, 211, 153, 0.15) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+    }
+
+  
+    /* Custom Scrollbar for Modals */
+    .custom-modal-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-modal-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-modal-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 9999px;
+    }
+    .custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.35);
+    }
+    html.dark .custom-modal-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    html.dark .custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Hide native browser clock/calendar picker icons inside time inputs to prevent duplicate icons */
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      display: none !important;
+      -webkit-appearance: none !important;
+      margin: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    input[type="time"]::-webkit-inner-spin-button,
+    input[type="time"]::-webkit-clear-button {
+      display: none !important;
+      -webkit-appearance: none !important;
+    }
+
+</style>
+</head>
+<body class="p-4 md:p-6 lg:p-8 flex flex-col justify-between select-none relative bg-tech-grid">
+
+  <!-- Full-screen Strobe Warning Overlay -->
+  <div id="screenFlashOverlay"></div>
+
+  <!-- Central Welcome Banner (Dynamic Name & Course Day Calculation) -->
+  <div id="welcomeBannerOverlay" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-all duration-700 opacity-0 scale-95">
+    <div class="glass-card-elevated px-8 py-7 rounded-3xl border border-emerald-500/40 bg-white/95 dark:bg-zinc-900/95 shadow-2xl flex flex-col items-center gap-3 backdrop-blur-xl max-w-md mx-4 text-center">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700/80 flex items-center justify-center text-3xl shadow-sm">
+        🌱
+      </div>
+      <div class="space-y-1.5">
+        <h2 id="welcomeBannerGreeting" class="text-base sm:text-lg font-extrabold text-black dark:text-white tracking-tight">
+          고병화 강사님, 어서오세요! 반갑습니다 🌱
+        </h2>
+        <p id="welcomeBannerDay" class="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 font-mono">
+          오늘은 새싹 프로그램 10일차입니다.
+        </p>
+      </div>
+      <div class="mt-1 flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+        <span>개강일: 2026.10.14</span>
+        <span>·</span>
+        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">평일 기준 진행</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finale Celebration Overlay Banner (Glassmorphism) -->
+  <div id="finaleBannerOverlay" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-all duration-500 opacity-0 scale-95">
+    <div class="glass-card-elevated px-8 py-7 rounded-3xl border-2 border-emerald-500/50 bg-white/95 shadow-2xl flex flex-col items-center gap-3 backdrop-blur-xl max-w-md mx-4 text-center">
+      <span class="text-5xl animate-bounce">🌱 👏 🎉</span>
+      <h2 class="text-2xl md:text-3xl font-black text-zinc-900 tracking-tight font-sans">오늘도 모두 수고하셨습니다 👏</h2>
+      <p class="text-xs md:text-sm font-mono text-zinc-600 font-bold">18:00 정각 퇴근 · 오늘 하루도 멋진 강의였습니다!</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification Stack -->
+  <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- Header HUD: Branding, Live Notice & Controls -->
+  <header class="w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 border-b border-black/10 pb-4 mb-5">
+    <div class="flex items-center gap-3">
+      <div class="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-black text-white shadow-sm">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-40"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-black"></span>
+        </span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm md:text-base font-extrabold tracking-wide text-black uppercase flex items-center gap-1.5"><span class="text-emerald-600">🌱</span><span>SEASAC TIMER</span></h1>
+          <!-- Editable Instructor Badge -->
+          <div onclick="editInstructorName()" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700/80 text-emerald-800 dark:text-emerald-300 text-xs font-semibold cursor-pointer transition-all shadow-2xs group" title="클릭하여 강사명 수정">
+            <span class="text-[11px]">🧑‍🏫</span>
+            <span id="headerInstructorName" class="font-bold border-b border-dashed border-emerald-600/50 pb-px">고병화</span>
+            <span class="text-emerald-700 dark:text-emerald-400 font-medium">강사님</span>
+            <svg class="w-3 h-3 text-emerald-600 dark:text-emerald-400 opacity-60 group-hover:opacity-100 transition-opacity ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          </div>
+        </div>
+        <p class="text-[11px] text-zinc-500 font-mono tracking-tight">수업 50분 · 15분 휴식 보장 · 7교시 45분 (18:00 정각 퇴근) · 점심 12:30~14:00</p>
+      </div>
+    </div>
+
+    <!-- Screen-sharing Notice Bar -->
+    <div class="flex-1 max-w-lg hidden lg:flex items-center bg-white border border-black/15 rounded-2xl px-4 py-2.5 focus-within:border-black transition-all shadow-sm group">
+      <span class="text-xs text-black font-mono mr-2.5 flex items-center gap-1.5 shrink-0 font-bold">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+        실시간 공지
+      </span>
+      <input type="text" id="noticeInput" placeholder="화면 공유 중 학생 전달 메시지 (예: 실습 코드 3번 수정 완료 후 휴식)" class="bg-transparent text-xs text-black placeholder-zinc-400 outline-none w-full font-sans">
+    </div>
+
+    <!-- Quick Settings & Wall Clock -->
+    <div class="flex items-center gap-2.5">
+      <!-- Consolidated Settings Button -->
+      <button onclick="toggleSettingsModal()" class="tactile-btn px-3.5 py-2 rounded-xl border border-black/15 bg-white hover:bg-zinc-100 text-xs font-mono text-zinc-800 flex items-center gap-1.5 shadow-sm dark:bg-zinc-900 dark:border-white/20 dark:text-zinc-200 dark:hover:bg-zinc-800">
+        <span class="text-sm">⚙️</span>
+        <span class="font-bold">설정</span>
+      </button>
+
+      <!-- Wall Clock -->
+      <div class="glass-card px-3.5 py-2 rounded-xl font-mono text-xs tracking-wider text-zinc-700 flex items-center gap-2 border border-black/15 shadow-sm dark:bg-zinc-900/80 dark:border-white/15 dark:text-zinc-200">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="wallClock" class="font-bold text-black text-sm dark:text-white">--:--:--</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Instructor Quick Period Selector / Smart Sync Bar -->
+  <section class="w-full max-w-7xl mx-auto mb-5 glass-card rounded-2xl p-3 border border-black/10 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+    <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+      <span class="text-zinc-600 font-bold flex items-center gap-1 px-2 py-1 bg-black/5 rounded-lg text-[11px]">
+        <span>⚡ 교시 지정:</span>
+      </span>
+      <button onclick="manualSelectPeriod(1)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/15 hover:border-black text-zinc-800" data-period="1">1교시</button>
+      <button onclick="manualSelectPeriod(2)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/15 hover:border-black text-zinc-800" data-period="2">2교시</button>
+      <button onclick="manualSelectPeriod(3)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/15 hover:border-black text-zinc-800" data-period="3">3교시</button>
+      <button onclick="manualSelectLunch()" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/20 text-black font-bold" data-period="lunch">🍱 점심</button>
+      <button onclick="manualSelectPeriod(4)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/15 hover:border-black text-zinc-800" data-period="4">4교시</button>
+      <button onclick="manualSelectPeriod(5)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/15 hover:border-black text-zinc-800" data-period="5">5교시</button>
+      <button onclick="manualSelectPeriod(6)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-black/15 hover:border-black text-zinc-800" data-period="6">6교시</button>
+      <button onclick="manualSelectPeriod(7)" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-white border border-rose-300 text-rose-700 font-bold" data-period="7">7교시(45분 · 18:00 퇴근)</button>
+      <button onclick="openPracticeSetupModal()" class="period-chip tactile-btn px-2.5 sm:px-3 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-700 font-bold hover:border-blue-600 dark:bg-blue-950/60 dark:border-blue-700 dark:text-blue-300 transition-all shadow-sm" data-period="practice">💻 실습 (마감 시각 지정)</button>
+    </div>
+
+    </section>
+
+  <!-- Main Dashboard Grid -->
+  <main class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 mb-6">
+
+    <!-- Left 7 Cols: Tactical Circular HUD & Actions -->
+    <section class="lg:col-span-7 flex flex-col gap-5">
+      
+      <!-- Big Center Display Card -->
+      <div id="mainTimerCard" class="glass-card-elevated rounded-3xl p-6 md:p-8 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 lecture-glow border border-black/15">
+        
+        <!-- Ambient Atmospheric Glows -->
+        <div id="glowBackdrop" class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-black/5 blur-3xl pointer-events-none transition-all duration-700"></div>
+        <div id="glowBackdrop2" class="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-black/[0.03] blur-3xl pointer-events-none"></div>
+        <!-- 10s Ambient Warning Glow Ring (Hidden by default) -->
+        <div id="warningAmbientRing" class="absolute inset-4 rounded-full pointer-events-none transition-opacity duration-500 opacity-0 bg-rose-500/10 blur-2xl"></div>
+
+        <!-- Card Top Header Bar: Status Badge (Left) & Controls (Right) - Zero Overlap Flex Layout -->
+        <div class="w-full flex items-center justify-between gap-3 mb-3 z-20 flex-wrap sm:flex-nowrap">
+          <!-- Left: State Badge & Pause State -->
+          <div class="flex items-center gap-2 min-w-0">
+            <div id="pauseIndicatorBadge" class="hidden text-xs font-mono font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-full animate-pulse shadow-sm shrink-0">
+              ⏸️ 일시정지됨
+            </div>
+            <div class="flex items-center gap-2 min-w-0">
+              <span id="stateDot" class="w-2.5 h-2.5 rounded-full bg-black animate-pulse shadow-md shadow-black/20 shrink-0"></span>
+              <span id="stateBadge" class="text-xs md:text-sm font-extrabold tracking-wider uppercase px-3.5 py-1 rounded-full bg-black/5 border border-black/20 text-black font-mono shadow-sm truncate">
+                수업 진행 중 (1교시)
+              </span>
+            </div>
+          </div>
+
+          <!-- Right: Action Buttons Group (Pause, PIP, Zoom, and in Fullscreen: Live Wall Clock) -->
+          <div class="flex items-center gap-2 shrink-0 ml-auto">
+            <!-- Fullscreen Live Wall Clock (Prominently shown in Zoom mode) -->
+            <div id="fullscreenWallClock" class="hidden glass-card px-3 py-1 rounded-xl font-mono text-xs tracking-wider text-zinc-800 border border-black/15 shadow-sm items-center gap-1.5 font-bold">
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+              <span id="fsClockDigits">--:--:--</span>
+            </div>
+
+            <!-- Pause Quick Button -->
+            <button id="quickPauseBtn" onclick="togglePauseTimer()" title="일시정지 (단축키: P)" class="tactile-btn flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/95 hover:bg-zinc-100 text-zinc-700 hover:text-black border border-black/15 shadow-sm text-xs font-semibold backdrop-blur-sm transition-all">
+              <span id="quickPauseIcon">⏸️</span>
+              <span id="quickPauseLabel" class="hidden sm:inline text-[11px] font-mono">일시정지</span>
+            </button>
+            
+            <!-- PIP Button -->
+            <button id="pipBtn" onclick="togglePictureInPicture()" title="화면 항상 위 미니 플로팅 창 (PIP)" class="tactile-btn flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/95 hover:bg-zinc-100 text-zinc-700 hover:text-black border border-black/15 shadow-sm text-xs font-semibold backdrop-blur-sm transition-all">
+              <span>📌</span>
+              <span class="hidden sm:inline text-[11px] font-mono">PIP</span>
+            </button>
+
+            <!-- Zoom / Fullscreen Button -->
+            <button id="zoomExpandBtn" onclick="toggleTimerFullscreen()" title="타이머 전체화면 / 확대 집중 모드 (단축키: F)" class="tactile-btn flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black hover:bg-zinc-800 text-white border border-black shadow-sm text-xs font-semibold transition-all">
+              <svg id="zoomIconExpand" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+              <svg id="zoomIconCompress" class="w-3.5 h-3.5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4l5 5m0 0H5m4 0V5m11-1l-5 5m0 0h4m-4 0V5M4 20l5-5m0 0H5m4 0v4m11 1l-5-5m0 0h4m-4 0v4"></path></svg>
+              <span id="zoomBtnLabel" class="text-[11px] font-mono">확대</span>
+            </button>
+          </div>
+        </div>
+
+        
+        <!-- Active Practice Lab Target Banner (Visible only in PRACTICE mode) -->
+        <div id="practiceActiveBanner" class="hidden w-full max-w-md my-1 p-2.5 rounded-2xl bg-blue-50/90 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-center animate-in fade-in duration-300 z-10">
+          <div class="flex items-center justify-center gap-1.5 text-blue-700 dark:text-blue-300 font-mono font-black text-sm">
+            <span>💻</span>
+            <span id="practiceBannerTime">~ 16:45 까지 실습</span>
+          </div>
+          <div id="practiceBannerTask" class="text-xs font-semibold text-blue-800 dark:text-blue-200 mt-0.5 hidden truncate font-sans">
+            🎯 과제: <span id="practiceTaskText"></span>
+          </div>
+        </div>
+
+        <!-- Circular Visual Gauge & Digits Container -->
+        <div id="circleContainer" class="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center my-2 z-10 transition-all duration-300">
+          <svg class="w-full h-full transform" viewBox="0 0 260 260">
+            <defs>
+              <linearGradient id="gaugeGradMonochrome" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#000000" />
+                <stop offset="100%" stop-color="#52525b" />
+              </linearGradient>
+              <linearGradient id="gaugeGradInverted" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#18181b" />
+                <stop offset="100%" stop-color="#71717a" />
+              </linearGradient>
+              <!-- Overtime Warning Hazard Pattern -->
+              <pattern id="hazardPattern" width="16" height="16" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="16" stroke="#e11d48" stroke-width="8" />
+                <line x1="8" y1="0" x2="8" y2="16" stroke="#000000" stroke-width="8" />
+              </pattern>
+            </defs>
+
+            <!-- Background Track -->
+            <circle id="bgTrackCircle" cx="130" cy="130" r="115" stroke="rgba(0, 0, 0, 0.08)" stroke-width="12" fill="transparent" />
+            <!-- Inner Tick Marker Ring -->
+            <circle cx="130" cy="130" r="102" stroke="rgba(0, 0, 0, 0.08)" stroke-width="1" stroke-dasharray="4 8" fill="transparent" />
+            
+            <!-- Main Animated Arc (Draining 100% -> 0% Clockwise Countdown) -->
+            <circle id="progressRing" class="progress-ring-circle" cx="130" cy="130" r="115" stroke="url(#gaugeGradMonochrome)" stroke-width="12" fill="transparent" stroke-dasharray="722.56" stroke-dashoffset="0" stroke-linecap="round" />
+
+            <!-- Overtime Count-up Gauge (Fills up in Warning Red #e11d48 when overtime begins) -->
+            <circle id="overtimeRing" class="progress-ring-circle" cx="130" cy="130" r="115" stroke="#e11d48" stroke-width="14" fill="transparent" stroke-dasharray="722.56" stroke-dashoffset="722.56" stroke-linecap="round" style="display: none;" />
+          </svg>
+
+          <!-- Core Numbers: Auto-Scaled & Separated Badges for 100% Zero-Overlap Safety -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+            
+            <!-- Top Overtime Tag Badge (Separated from digits to guarantee zero overlap) -->
+            <div id="overtimeBadge" class="text-[11px] font-mono text-white font-black tracking-wider px-3 py-0.5 rounded-full bg-rose-600 border border-rose-500 hidden animate-pulse shadow-md mb-1">
+              ⚠️ + OVERTIME (초과 진행 중)
+            </div>
+
+            <!-- Digits Display (Dynamic font scaling: text-5xl to 6xl) -->
+            <div id="timerDisplayWrapper" class="flex items-center justify-center transition-all duration-300">
+              <span id="timerDisplay" class="timer-font text-5xl md:text-6xl font-extrabold tracking-tighter text-black drop-shadow-sm transition-colors duration-300">
+                50:00
+              </span>
+            </div>
+
+            <!-- Target End Time Pill -->
+            <div id="targetEndPill" class="text-xs text-zinc-700 mt-2 font-mono flex items-center gap-1.5 bg-zinc-100 px-3.5 py-1 rounded-full border border-black/10 transition-colors">
+              <span class="text-zinc-500 font-medium">목표 종료</span>
+              <span id="targetEndTimeText" class="text-black font-bold">10:50</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Info Blocks -->
+        <div id="timerInfoGrid" class="w-full grid grid-cols-2 gap-3 text-center my-2 z-10 font-mono text-xs md:text-sm">
+          <div class="glass-card rounded-2xl p-3 border border-black/10 relative group bg-white/70">
+            <div class="text-zinc-500 text-xs flex items-center justify-center gap-1.5 font-semibold">
+              <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>현재 진행 시간</span>
+              <button onclick="toggleStartTimeEditModal()" title="시작 시각 직접 수정" class="tactile-btn p-1 rounded-md bg-black/5 hover:bg-black/10 text-zinc-600 hover:text-black transition-all border border-transparent hover:border-black/20">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              </button>
+            </div>
+            <div id="elapsedTimeText" class="text-black font-extrabold text-lg mt-1 tracking-tight">00:00</div>
+            <div class="text-[10px] text-zinc-500 mt-0.5 flex items-center justify-center gap-1">
+              <span>시작:</span>
+              <span id="currentStartTimeBadge" class="font-bold text-black underline cursor-pointer hover:text-zinc-600" onclick="toggleStartTimeEditModal()">10:00</span>
+            </div>
+          </div>
+          <div class="glass-card rounded-2xl p-3 border border-black/10 bg-white/70">
+            <div class="text-zinc-500 text-xs flex items-center justify-center gap-1 font-semibold">
+              <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+              다음 일정 안내
+            </div>
+            <div id="nextEventText" class="text-black font-extrabold text-lg mt-1 tracking-tight">10:50 (15분 휴식)</div>
+            <div class="text-[10px] text-zinc-500 mt-0.5">
+              <span>목표 종료: </span><b id="quickSubTargetEnd" class="text-zinc-800 font-bold">10:50</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inline Modal/Drawer for Modifying Session Start Time -->
+        <div id="startTimeEditModal" class="w-full hidden z-20 my-1 bg-white dark:bg-zinc-900 border border-black/20 dark:border-white/20 rounded-2xl p-3.5 shadow-xl transition-all">
+          <div class="flex items-center justify-between pb-2 border-b border-black/10 dark:border-white/10 mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-black dark:text-white text-sm font-bold">✏️ 현재 세션 시작 시각 수정</span>
+              <span class="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">(교시 유지 및 잔여시간 재계산)</span>
+            </div>
+            <button onclick="toggleStartTimeEditModal()" class="text-zinc-400 hover:text-black dark:hover:text-white text-xs p-1 font-bold">✕</button>
+          </div>
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <!-- Time Picker with Clock Icon & Vertical Steppers -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-zinc-700 dark:text-zinc-300 font-mono font-medium">시작 시각:</span>
+              <div class="flex items-center bg-zinc-50 dark:bg-zinc-800 border border-black/20 dark:border-white/20 rounded-xl px-2 py-1 shadow-inner focus-within:border-black dark:focus-within:border-white transition-all">
+                <button type="button" onclick="openTimePickerDropdown(); this.blur();" title="시간 선택기 열기" class="text-base p-1 text-zinc-500 hover:text-black dark:hover:text-white transition-colors cursor-pointer">🕒</button>
+                <input type="time" id="editStartTimeInput" step="60" title="마우스 휠 또는 방향키(↑/↓)로 1분 단위 조절 가능" class="bg-transparent border-none text-sm font-bold text-black dark:text-white font-mono focus:outline-none px-2 py-0.5 w-28 sm:w-32 text-center">
+                <div class="flex flex-col ml-1 border-l border-black/10 dark:border-white/10 pl-1 gap-0.5">
+                  <button type="button" onclick="applyPresetStartDiff(1); this.blur();" title="1분 추가 (▲)" class="tactile-btn text-[9px] leading-none text-zinc-500 hover:text-black dark:hover:text-white p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded">▲</button>
+                  <button type="button" onclick="applyPresetStartDiff(-1); this.blur();" title="1분 차감 (▼)" class="tactile-btn text-[9px] leading-none text-zinc-500 hover:text-black dark:hover:text-white p-0.5 hover:bg-black/5 dark:hover:bg-white/10 rounded">▼</button>
+                </div>
+              </div>
+            </div>
+            <!-- Preset Diff Chips and Apply Button -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="applyPresetStartDiff(-10); this.blur();" title="10분 차감" class="tactile-btn px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-mono border border-black/15 dark:border-white/15 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold">-10분</button>
+              <button type="button" onclick="applyPresetStartDiff(-5); this.blur();" title="5분 차감" class="tactile-btn px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-mono border border-black/15 dark:border-white/15 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold">-5분</button>
+              <button type="button" onclick="applyPresetStartDiff(5); this.blur();" title="5분 추가" class="tactile-btn px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-mono border border-black/15 dark:border-white/15 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold">+5분</button>
+              <button type="button" onclick="applyPresetStartDiff(10); this.blur();" title="10분 추가" class="tactile-btn px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-mono border border-black/15 dark:border-white/15 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold">+10분</button>
+              <button type="button" onclick="saveCustomStartTime()" class="tactile-btn px-3.5 py-1.5 rounded-xl bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-extrabold text-xs font-mono shadow-md">적용 (Enter)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Single Primary Action Button (High-Contrast Solid Black) -->
+        <div id="actionContainer" class="w-full flex flex-col gap-2.5 z-10 mt-1">
+          <button id="masterActionBtn" onclick="handleMasterAction()" class="tactile-btn w-full py-4 px-6 rounded-2xl bg-black hover:bg-zinc-800 text-white font-extrabold text-base md:text-lg tracking-wide shadow-lg shadow-black/15 active:scale-[0.98] flex items-center justify-center gap-2.5 border border-black">
+            <span id="actionBtnIcon" class="text-xl">☕</span>
+            <span id="actionBtnText">휴식 시작 (15분 카운트다운)</span>
+          </button>
+
+          <!-- Quick Extend Chips -->
+          <div class="flex items-center justify-center gap-2 pt-1">
+            <span class="text-xs text-zinc-500 font-mono mr-1">원클릭 즉시 연장:</span>
+            <button onclick="extendTime(3)" class="tactile-btn px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-800 hover:text-black text-xs font-mono border border-black/15 hover:border-black shadow-sm font-semibold">+3분</button>
+            <button onclick="extendTime(5)" class="tactile-btn px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-800 hover:text-black text-xs font-mono border border-black/15 hover:border-black shadow-sm font-semibold">+5분</button>
+            <button onclick="extendTime(10)" class="tactile-btn px-3 py-1.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-800 hover:text-black text-xs font-mono border border-black/15 hover:border-black shadow-sm font-semibold">+10분</button>
+          </div>
+        </div>
+
+        <!-- Quiet Duration Configuration -->
+        <div class="w-full flex items-center justify-between border-t border-black/10 pt-3.5 mt-3.5 z-10 text-xs text-zinc-500 font-mono zoom-hide">
+          <div class="flex items-center gap-2 bg-zinc-100 px-3 py-1.5 rounded-xl border border-black/10">
+            <span class="text-zinc-600 font-medium">기본 쉬는 시간:</span>
+            <input type="number" id="breakSettingInput" value="15" min="1" max="60" onchange="updateCustomDurations()" class="w-12 bg-white border border-black/20 text-center font-bold text-black rounded-lg py-0.5 outline-none focus:border-black">
+            <span class="text-zinc-600">분</span>
+          </div>
+          <div class="flex items-center gap-2 bg-zinc-100 px-3 py-1.5 rounded-xl border border-black/10">
+            <span class="text-zinc-600 font-medium">기본 수업 시간:</span>
+            <input type="number" id="classSettingInput" value="50" min="10" max="90" onchange="updateCustomDurations()" class="w-12 bg-white border border-black/20 text-center font-bold text-black rounded-lg py-0.5 outline-none focus:border-black">
+            <span class="text-zinc-600">분</span>
+          </div>
+        </div>
+
+        <!-- Beginner Shortcut Quick Guide Tab/Panel inside Timer Card -->
+        <div class="w-full mt-3 pt-2.5 border-t border-black/10 z-10 zoom-hide">
+          <div class="flex items-center justify-between text-[11px] font-mono text-zinc-500">
+            <button type="button" onclick="toggleShortcutGuide()" class="flex items-center gap-1.5 hover:text-black font-bold text-zinc-700 transition-colors">
+              <span>⌨️ 초보자 단축키 빠른 안내</span>
+              <span id="shortcutChevron" class="text-[9px] transform transition-transform">▼</span>
+            </button>
+            <span class="text-[10px] text-zinc-400">클릭하여 접기/펼치기</span>
+          </div>
+          
+          <div id="shortcutGuidePanel" class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-mono bg-zinc-50/90 p-2.5 rounded-xl border border-black/10">
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">Space</kbd>
+              <span class="text-zinc-600">수업/휴식 전환</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">P</kbd>
+              <span class="text-zinc-600">일시정지/재개</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">F</kbd>
+              <span class="text-zinc-600">타이머 확대</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">+</kbd>
+              <span class="text-zinc-600">+3분 즉시연장</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">Alt+5</kbd>
+              <span class="text-zinc-600">+5분 연장</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">M</kbd>
+              <span class="text-zinc-600">음소거 ON/OFF</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">Alt+P</kbd>
+              <span class="text-zinc-600">실습(20분)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <kbd class="px-1.5 py-0.5 rounded bg-white border border-black/20 text-black font-bold text-[10px] shadow-2xs">Esc</kbd>
+              <span class="text-zinc-600">모달/확대 닫기</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      </section>
+
+    <!-- Right 5 Cols: Standard Timetable, Execution Log & Cumulative Stats -->
+    <section class="lg:col-span-5 flex flex-col gap-5">
+
+      <!-- Official Blueprint Timetable Reference (Clean 18:00 Finish) -->
+      <div class="glass-card rounded-3xl p-5 border border-black/10 dark:border-white/10 shadow-sm bg-white dark:bg-zinc-900/90">
+        <div class="flex items-center justify-between pb-3 border-b border-black/10 mb-3">
+          <h2 class="text-sm font-bold text-black flex items-center gap-2">
+            <div class="p-1 rounded-lg bg-black text-white">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <span>정규 기준 시간표 (18:00 정각 퇴근)</span>
+          </h2>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-bold">10:00~18:00 (8h)</span>
+        </div>
+
+        <div class="space-y-1.5 text-xs font-mono max-h-72 overflow-y-auto p-1.5 pr-2" id="timetableScheduleList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Live Execution Log Table -->
+      <div class="glass-card rounded-3xl p-5 border border-black/10 dark:border-white/10 shadow-sm bg-white dark:bg-zinc-900/90 flex-1 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-black/10 mb-3">
+            <h2 class="text-sm font-bold text-black flex items-center gap-2">
+              <div class="p-1 rounded-lg bg-black text-white">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+              </div>
+              <span>실제 강의/휴식 완료 기록표</span>
+            </h2>
+            <div class="flex items-center gap-1.5">
+              <button onclick="copySessionLogToClipboard()" title="클립보드에 기록 복사" class="tactile-btn px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 hover:text-black text-[11px] font-mono border border-black/15 font-semibold flex items-center gap-1 shadow-2xs">
+                <span>📋</span>
+                <span>기록 복사</span>
+              </button>
+              <button onclick="exportSessionLogCSV()" title="CSV 파일 다운로드" class="tactile-btn px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 hover:text-black text-[11px] font-mono border border-black/15 font-semibold flex items-center gap-1 shadow-2xs">
+                <span>📥</span>
+                <span>CSV 저장</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-64 overflow-y-auto pr-1">
+            <table class="w-full text-left text-xs font-mono">
+              <thead>
+                <tr class="text-zinc-500 border-b border-black/10 pb-2 text-[11px]">
+                  <th class="py-2 px-2.5 font-semibold">세션</th>
+                  <th class="py-2 px-2.5 font-semibold">구간</th>
+                  <th class="py-2 px-2.5 font-semibold">소요</th>
+                  <th class="py-2 px-2.5 font-semibold text-right">상태</th>
+                </tr>
+              </thead>
+              <tbody id="sessionLogTableBody" class="divide-y divide-black/10">
+                <tr id="emptyLogPlaceholder" class="text-zinc-400 text-center py-6">
+                  <td colspan="4" class="py-8 text-xs text-zinc-500">
+                    <div class="flex flex-col items-center gap-2">
+                      <span class="text-lg">⏳</span>
+                      <span>아직 완료된 세션 기록이 없습니다.</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+          <span>* 18:00 칼퇴근 기준 최적화</span>
+          <span class="text-black dark:text-white font-bold">휴식 기본 15분 적용 중</span>
+        </div>
+      </div>
+
+      <!-- Real-time Cumulative Summary Cards (Click to open Target Comparison Modal) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono">
+        <!-- 1. 총 강의 카드 -->
+        <div id="statLectureCard" onclick="openTargetStatsModal()" title="클릭: 정규 목표(315분) 대비 달성률 상세 보기" class="glass-card rounded-2xl p-3 border border-black/10 dark:border-white/10 relative overflow-hidden group hover:border-emerald-500/50 dark:hover:border-emerald-400/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-white dark:bg-zinc-900/90 shadow-sm cursor-pointer select-none">
+          <div class="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold flex items-center justify-between whitespace-nowrap">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+              <span class="whitespace-nowrap">● 총 강의 시간</span>
+            </div>
+          </div>
+          <div id="statTotalLecture" class="text-sm sm:text-base font-extrabold text-black dark:text-white mt-1 tracking-tight">00:00</div>
+          <!-- Mini Progress Bar -->
+          <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full mt-1.5 overflow-hidden">
+            <div id="statLectureBar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+          </div>
+          <div id="statLectureSub" class="text-[9px] text-zinc-400 mt-1 truncate whitespace-nowrap">실제 수업 누적 (클릭 시 상세)</div>
+        </div>
+
+        <!-- 2. 총 휴식 카드 -->
+        <div id="statBreakCard" onclick="openTargetStatsModal()" title="클릭: 정규 목표(75분) 대비 달성률 상세 보기" class="glass-card rounded-2xl p-3 border border-black/10 dark:border-white/10 relative overflow-hidden group hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-white dark:bg-zinc-900/90 shadow-sm cursor-pointer select-none">
+          <div class="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold flex items-center justify-between whitespace-nowrap">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+              <span class="whitespace-nowrap">● 총 휴식 시간</span>
+            </div>
+          </div>
+          <div id="statTotalBreak" class="text-sm sm:text-base font-extrabold text-black dark:text-white mt-1 tracking-tight">00:00</div>
+          <!-- Mini Progress Bar -->
+          <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full mt-1.5 overflow-hidden">
+            <div id="statBreakBar" class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+          </div>
+          <div id="statBreakSub" class="text-[9px] text-zinc-400 mt-1 truncate whitespace-nowrap">15분 보장 누적 (클릭 시 상세)</div>
+        </div>
+
+        <!-- 3. 오버타임 카드 -->
+        <div class="glass-card rounded-2xl p-3 border border-black/10 dark:border-white/10 relative overflow-hidden group hover:border-rose-500/40 transition-all bg-white dark:bg-zinc-900/90 shadow-sm">
+          <div class="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold flex items-center justify-between whitespace-nowrap">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+              <span class="whitespace-nowrap">● 오버타임</span>
+            </div>
+            <span class="text-[9px] text-rose-500/70 font-mono whitespace-nowrap">지연</span>
+          </div>
+          <div id="statTotalOver" class="text-sm sm:text-base font-extrabold text-rose-600 dark:text-rose-400 mt-1 tracking-tight">+00:00</div>
+          <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full mt-1.5 overflow-hidden">
+            <div id="statOverBar" class="bg-rose-500 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+          </div>
+          <div class="text-[9px] text-zinc-400 mt-1 truncate whitespace-nowrap">초과 지연 누적</div>
+        </div>
+
+        <!-- 4. 완료 교시 카드 -->
+        <div class="glass-card rounded-2xl p-3 border border-black/10 dark:border-white/10 relative overflow-hidden group hover:border-black/30 dark:hover:border-white/30 transition-all bg-white dark:bg-zinc-900/90 shadow-sm">
+          <div class="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold flex items-center justify-between whitespace-nowrap">
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="w-1.5 h-1.5 rounded-full bg-black dark:bg-white shrink-0"></span>
+              <span class="whitespace-nowrap">● 완료 교시</span>
+            </div>
+            <span id="statPeriodPercent" class="text-[9px] text-zinc-400 font-mono whitespace-nowrap">0%</span>
+          </div>
+          <div id="statCompletedCount" class="text-sm sm:text-base font-extrabold text-black dark:text-white mt-1 tracking-tight">0 / 7</div>
+          <div class="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full mt-1.5 overflow-hidden">
+            <div id="statPeriodBar" class="bg-black dark:bg-white h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+          </div>
+          <div class="text-[9px] text-zinc-400 mt-1 truncate whitespace-nowrap">18:00 퇴근 목표</div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- System Settings Modal (Tab 1: Appearance / Tab 2: Alerts & Sound) -->
+  <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm hidden transition-all duration-300 overflow-y-auto">
+    <div class="glass-card-elevated w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-black/20 dark:border-white/20 shadow-2xl relative animate-in fade-in zoom-in duration-200 bg-white dark:bg-zinc-900 max-h-[88vh] flex flex-col my-auto">
+      
+      <!-- Modal Header (Pinned / Sticky) -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-black/10 dark:border-white/10 mb-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-black dark:bg-white text-white dark:text-black text-base font-bold">⚙️</div>
+          <div>
+            <h3 class="text-base font-bold text-black dark:text-white">환경 설정 (Settings)</h3>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">화면 테마, 알림 사운드 및 효과 제어</p>
+          </div>
+        </div>
+        <button onclick="toggleSettingsModal()" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 text-sm font-bold transition-all">✕</button>
+      </div>
+
+      <!-- Settings Tab Nav (Pinned / Sticky) -->
+      <div class="flex border-b border-black/10 dark:border-white/10 mb-3.5 font-mono text-xs shrink-0">
+        <button id="settingsTabBtnAppearance" onclick="switchSettingsTab('appearance')" class="flex-1 pb-2.5 font-bold border-b-2 border-black dark:border-white text-black dark:text-white transition-all">
+          🎨 화면 설정
+        </button>
+        <button id="settingsTabBtnAlerts" onclick="switchSettingsTab('alerts')" class="flex-1 pb-2.5 font-bold border-b-2 border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all">
+          🔔 알림 & 사운드
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable Container with Custom Scrollbar) -->
+      <div class="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-4 custom-modal-scrollbar">
+
+        <!-- Tab 1: Appearance (Theme Switching) -->
+        <div id="settingsTabAppearance" class="space-y-4">
+          <div>
+            <label class="block font-bold text-black dark:text-white text-xs mb-2">🌓 디스플레이 테마 (Theme)</label>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Light Mode Button Card -->
+              <button id="themeLightBtn" onclick="setTheme('light')" class="p-3.5 rounded-2xl border border-black/20 text-left transition-all hover:border-black flex flex-col justify-between h-24 bg-zinc-50 dark:bg-zinc-800/40">
+                <div class="flex items-center justify-between">
+                  <span class="text-xl">☀️</span>
+                  <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 text-black">Light</span>
+                </div>
+                <div>
+                  <div class="font-bold text-xs text-zinc-900 dark:text-zinc-100">라이트 모드</div>
+                  <div class="text-[10px] text-zinc-500">모던 화이트 미니멀</div>
+                </div>
+              </button>
+
+              <!-- Dark Mode Button Card -->
+              <button id="themeDarkBtn" onclick="setTheme('dark')" class="p-3.5 rounded-2xl border border-black/20 text-left transition-all hover:border-emerald-500 flex flex-col justify-between h-24 bg-zinc-900 text-white">
+                <div class="flex items-center justify-between">
+                  <span class="text-xl">🌙</span>
+                  <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">Dark</span>
+                </div>
+                <div>
+                  <div class="font-bold text-xs text-white">옵시디언 다크</div>
+                  <div class="text-[10px] text-zinc-400">고대비 딥 블랙</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-black/10 dark:border-white/10 text-xs font-sans text-zinc-600 dark:text-zinc-300 leading-relaxed">
+            💡 <span class="font-bold">팁:</span> 어두운 강의실이나 빔프로젝터 환경에서는 <span class="font-bold text-emerald-600 dark:text-emerald-400">옵시디언 다크 모드</span>가 눈의 피로를 획기적으로 줄여줍니다.
+          </div>
+        </div>
+
+        <!-- Tab 2: Alerts & Sound -->
+        <div id="settingsTabAlerts" class="space-y-4 hidden text-xs font-mono pb-2">
+          
+          <!-- Master Sound Switch -->
+          <div class="flex items-center justify-between p-3.5 bg-zinc-50 dark:bg-zinc-800/70 rounded-2xl border border-black/10 dark:border-white/10">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">🔔</span>
+              <div>
+                <span class="font-bold text-black dark:text-white text-xs block">알림 사운드 마스터 토글</span>
+                <span class="text-[11px] text-zinc-500 dark:text-zinc-400 font-sans">모든 효과음 및 차임벨 On / Off</span>
+              </div>
+            </div>
+            <button id="modalSoundToggleBtn" onclick="toggleSound()" class="tactile-btn px-3.5 py-1.5 rounded-xl border border-black/20 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:border-white/20 text-xs font-mono font-bold flex items-center gap-1.5 shadow-sm text-zinc-800 dark:text-zinc-200">
+              <span id="modalSoundIcon">🔔</span>
+              <span id="modalSoundLabel">ON</span>
+            </button>
+          </div>
+
+          <!-- Volume Gain Slider -->
+          <div class="bg-zinc-50 dark:bg-zinc-800/70 p-3.5 rounded-2xl border border-black/10 dark:border-white/10">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-black dark:text-white text-xs flex items-center gap-1.5">
+                <span>🔊 마스터 볼륨 (게인 증폭)</span>
+              </span>
+              <span id="volumeValueLabel" class="font-extrabold text-black dark:text-white bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-lg text-xs">100%</span>
+            </div>
+            <input type="range" id="volumeSlider" min="0" max="200" value="100" oninput="handleVolumeChange(this.value)" class="w-full accent-black dark:accent-emerald-400 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-zinc-400 mt-1">
+              <span>0% (무음)</span>
+              <span>100% (기본)</span>
+              <span class="text-rose-600 dark:text-rose-400 font-bold">200% (마이크 관통 부스트!)</span>
+            </div>
+          </div>
+
+          <!-- Sound Tone Style Selector -->
+          <div class="bg-zinc-50 dark:bg-zinc-800/70 p-3.5 rounded-2xl border border-black/10 dark:border-white/10">
+            <label class="block font-bold text-black dark:text-white mb-2 text-xs">🎶 알림 사운드 톤 스타일</label>
+            <select id="soundStyleSelect" onchange="handleSoundStyleChange(this.value)" class="w-full p-2.5 bg-white dark:bg-zinc-900 border border-black/20 dark:border-white/20 rounded-xl text-xs font-sans font-bold text-black dark:text-white outline-none focus:border-black cursor-pointer shadow-sm">
+              <option value="chime">🎵 [맑은 차임벨] 상승 멜로디 & 경쾌한 알림</option>
+              <option value="school">🔔 [클래식 학교 종소리] 또렷한 웨스트민스터 차임</option>
+              <option value="digital">📟 [디지털 삐- 경고음] 명확한 전자 비프음</option>
+              <option value="mute">🔕 [무음] 사운드 끄기</option>
+            </select>
+          </div>
+
+          <!-- Visual Effect Toggles -->
+          <div class="bg-zinc-50 dark:bg-zinc-800/70 p-3.5 rounded-2xl border border-black/10 dark:border-white/10 space-y-2.5">
+            <span class="block font-bold text-black dark:text-white text-xs mb-1">🎆 화면 시각 알림 (Visual Blast)</span>
+            
+            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+              <input type="checkbox" id="confettiToggle" checked onchange="saveVisualSettings()" class="w-4 h-4 accent-black dark:accent-emerald-500 rounded cursor-pointer">
+              <div class="text-xs font-sans">
+                <span class="font-bold text-black dark:text-white">수업 종료 시 화면 폭죽 (Confetti 🎉)</span>
+                <p class="text-[11px] text-zinc-500 dark:text-zinc-400">카운트다운 00:00 도달 시 화려한 폭죽 발사</p>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-2.5 cursor-pointer select-none pt-2 border-t border-black/5 dark:border-white/5">
+              <input type="checkbox" id="screenFlashToggle" checked onchange="saveVisualSettings()" class="w-4 h-4 accent-black dark:accent-emerald-500 rounded cursor-pointer">
+              <div class="text-xs font-sans">
+                <span class="font-bold text-black dark:text-white">쉬는 시간 종료 시 화면 테두리 점멸 (Flash 🚨)</span>
+                <p class="text-[11px] text-zinc-500 dark:text-zinc-400">휴식 끝날 때 화면 전체가 2~3회 점멸하여 집중 환기</p>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-2.5 cursor-pointer select-none pt-2 border-t border-black/5 dark:border-white/5">
+              <input type="checkbox" id="ambientBgmToggle" onchange="saveVisualSettings()" class="w-4 h-4 accent-black dark:accent-emerald-500 rounded cursor-pointer">
+              <div class="text-xs font-sans">
+                <span class="font-bold text-black dark:text-white">휴식 시간 잔잔한 앰비언트 사운드 (BGM ☕)</span>
+                <p class="text-[11px] text-zinc-500 dark:text-zinc-400">15분 휴식 동안 심리적 안정을 주는 배경음</p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Preview Test Buttons -->
+          <div class="pt-1 flex items-center gap-2">
+            <button onclick="testClassEndEffect()" class="tactile-btn flex-1 py-2 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white font-bold text-xs border border-black/15 dark:border-white/15 flex items-center justify-center gap-1 shadow-sm">
+              <span>🎉 수업 종료</span>
+            </button>
+            <button onclick="testBreakEndEffect()" class="tactile-btn flex-1 py-2 px-3 rounded-xl bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black font-bold text-xs border border-black flex items-center justify-center gap-1 shadow-sm">
+              <span>🚨 휴식 종료</span>
+            </button>
+          </div>
+          <button onclick="test10sWarningCountdown()" class="tactile-btn w-full py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800 flex items-center justify-center gap-1.5 shadow-sm">
+            <span>⏱️ 10초 임박 카운트다운(밀리초·펄스) 즉시 체험</span>
+          </button>
+          <button onclick="testFinaleCelebration()" class="tactile-btn w-full py-1.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800 flex items-center justify-center gap-1.5 shadow-sm">
+            <span>🎆 7교시 최종 종료 피날레 (폭죽음·배너) 즉시 체험</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Practice (Lab) Target Time Setup Modal -->
+  <div id="practiceSetupModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm hidden transition-all duration-300 overflow-y-auto">
+    <div class="glass-card-elevated w-full max-w-md rounded-3xl p-5 sm:p-6 border border-black/20 dark:border-white/20 shadow-2xl relative animate-in fade-in zoom-in duration-200 bg-white dark:bg-zinc-900 max-h-[88vh] flex flex-col my-auto">
+      
+      <!-- Modal Header (Pinned / Sticky) -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-black/10 dark:border-white/10 mb-3 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-blue-600 text-white text-base font-bold">💻</div>
+          <div>
+            <h3 class="text-base font-bold text-black dark:text-white">실습 모드 마감 시각 지정</h3>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">목표 시각(Target Time) 기반 원클릭 카운트다운</p>
+          </div>
+        </div>
+        <button onclick="closePracticeSetupModal()" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 text-sm font-bold transition-all">✕</button>
+      </div>
+
+      <!-- Modal Body (Scrollable Container) -->
+      <div class="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-4 text-xs font-mono custom-modal-scrollbar">
+        <!-- 1. Real-time Dynamic Snapped Chips -->
+        <div>
+          <label class="block font-bold text-zinc-700 dark:text-zinc-300 mb-2">⚡ 현재 시각 기준 추천 마감 시각 (원클릭 시작)</label>
+          <div id="practiceSnappedChips" class="grid grid-cols-2 gap-2">
+            <!-- Populated dynamically by updatePracticeSnappedChips() -->
+          </div>
+        </div>
+
+        <!-- 2. Direct Target Time Input -->
+        <div class="bg-zinc-50 dark:bg-zinc-800/60 p-3.5 rounded-2xl border border-black/10 dark:border-white/10">
+          <label class="block font-bold text-black dark:text-white mb-2">🎯 마감 시각 직접 지정</label>
+          <div class="flex items-center gap-2">
+            <span class="text-zinc-600 dark:text-zinc-300 font-bold">~</span>
+            <input type="time" id="practiceTargetInput" step="60" class="flex-1 bg-white dark:bg-zinc-900 border border-black/20 dark:border-white/20 rounded-xl px-3 py-2 text-sm font-bold text-black dark:text-white font-mono focus:border-blue-600 outline-none">
+            <span class="text-zinc-600 dark:text-zinc-300 font-bold">까지</span>
+            <button onclick="startPracticeFromInput()" class="tactile-btn px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md">
+              실습 시작
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Optional Task Description Input -->
+        <div class="bg-zinc-50 dark:bg-zinc-800/60 p-3.5 rounded-2xl border border-black/10 dark:border-white/10">
+          <label class="block font-bold text-black dark:text-white mb-1.5">📝 실습 과제 안내 (선택 사항)</label>
+          <input type="text" id="practiceTaskInput" placeholder="예: 3번 컴포넌트 버그 수정 및 PR 제출" class="w-full bg-white dark:bg-zinc-900 border border-black/20 dark:border-white/20 rounded-xl px-3 py-2 text-xs font-sans text-black dark:text-white outline-none focus:border-blue-600">
+          <p class="text-[10px] text-zinc-400 mt-1">화면 중앙 배너 및 학생 공유창에 과제명이 함께 표기됩니다.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Central Target Comparison Modal (강의 & 휴식 목표 달성률 상세) -->
+  <div id="targetStatsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm hidden transition-all duration-300 overflow-y-auto" onclick="if(event.target===this) closeTargetStatsModal()">
+    <div class="glass-card-elevated w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-black/20 dark:border-white/20 shadow-2xl relative animate-in fade-in zoom-in duration-200 bg-white dark:bg-zinc-900 max-h-[88vh] flex flex-col my-auto font-mono">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-black/10 dark:border-white/10 mb-4 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-emerald-600 text-white text-base font-bold">📊</div>
+          <div>
+            <h3 class="text-base font-bold text-black dark:text-white font-sans">강의 & 휴식 목표 달성률</h3>
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-sans">정규 10:00~18:00 기준 시간표 대비 진행 현황</p>
+          </div>
+        </div>
+        <button onclick="closeTargetStatsModal()" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 text-sm font-bold transition-all">✕</button>
+      </div>
+
+      <!-- Modal Body (Scrollable Container) -->
+      <div class="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-4 custom-modal-scrollbar text-xs">
+        
+        <!-- Section 1: Lecture Progress -->
+        <div class="bg-zinc-50 dark:bg-zinc-800/60 p-4 rounded-2xl border border-black/10 dark:border-white/10 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-sm text-black dark:text-white font-sans">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span>총 강의 시간 진행도</span>
+            </div>
+            <span id="modalTargetLecPct" class="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-xs">0%</span>
+          </div>
+          
+          <div class="flex items-baseline justify-between text-zinc-700 dark:text-zinc-300">
+            <span class="text-xs">실제 강의 진행</span>
+            <span class="font-extrabold text-sm"><span id="modalTargetLecActual">0</span>분 / 목표 <span class="text-zinc-500">315분</span></span>
+          </div>
+
+          <!-- Large Progress Bar -->
+          <div class="w-full bg-zinc-200 dark:bg-zinc-700 h-3 rounded-full overflow-hidden shadow-inner">
+            <div id="modalTargetLecBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5">
+            <span>* 산출: 50분×5교시 + 20분(3교시) + 45분(7교시)</span>
+            <span id="modalTargetLecRemaining" class="font-bold text-zinc-700 dark:text-zinc-300">남은 강의: 315분</span>
+          </div>
+        </div>
+
+        <!-- Section 2: Break Progress -->
+        <div class="bg-zinc-50 dark:bg-zinc-800/60 p-4 rounded-2xl border border-black/10 dark:border-white/10 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-sm text-black dark:text-white font-sans">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <span>총 휴식 시간 진행도</span>
+            </div>
+            <span id="modalTargetBrkPct" class="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold text-xs">0%</span>
+          </div>
+          
+          <div class="flex items-baseline justify-between text-zinc-700 dark:text-zinc-300">
+            <span class="text-xs">보장 휴식 누적</span>
+            <span class="font-extrabold text-sm"><span id="modalTargetBrkActual">0</span>분 / 목표 <span class="text-zinc-500">75분</span></span>
+          </div>
+
+          <!-- Large Progress Bar -->
+          <div class="w-full bg-zinc-200 dark:bg-zinc-700 h-3 rounded-full overflow-hidden shadow-inner">
+            <div id="modalTargetBrkBar" class="bg-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5">
+            <span>* 산출: 15분 보장 휴식 × 5회 (점심 제외)</span>
+            <span id="modalTargetBrkRemaining" class="font-bold text-zinc-700 dark:text-zinc-300">남은 휴식: 75분</span>
+          </div>
+        </div>
+
+        <!-- Section 3: Summary Briefing -->
+        <div class="bg-zinc-50 dark:bg-zinc-800/60 p-4 rounded-2xl border border-black/10 dark:border-white/10 space-y-2">
+          <div class="font-bold text-sm text-black dark:text-white flex items-center gap-1.5 font-sans">
+            <span>📋</span>
+            <span>종합 분석 브리핑</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+            <div class="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10">
+              <div class="text-[10px] text-zinc-400">오버타임 지연 누적</div>
+              <div id="modalSummaryOvertime" class="font-bold text-rose-600 dark:text-rose-400 text-sm mt-0.5">+00:00</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10">
+              <div class="text-[10px] text-zinc-400">완료 교시 현황</div>
+              <div id="modalSummaryPeriods" class="font-bold text-black dark:text-white text-sm mt-0.5">0 / 7 교시</div>
+            </div>
+          </div>
+          <div id="modalSummaryText" class="text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed pt-1 font-sans">
+            정규 일정에 맞춰 순조롭게 진행 중입니다. (18:00 정각 퇴근 목표)
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex justify-end shrink-0">
+        <button onclick="closeTargetStatsModal()" class="tactile-btn px-5 py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs hover:bg-zinc-800 dark:hover:bg-zinc-200 shadow-md">
+          확인
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden Picture-in-Picture Elements -->
+  <canvas id="pipCanvas" width="360" height="360" style="display:none;"></canvas>
+  <video id="pipVideo" autoplay muted playsinline style="display:none;"></video>
+
+  <script>
+// -------------------------------------------------------------
+    // Audio Context Setup & Sound Synthesis (Web Audio API)
+    // -------------------------------------------------------------
+    let audioCtx = null;
+    let masterGainNode = null;
+    let isSoundEnabled = true;
+    let currentVolume = 1.0; // 0.0 to 2.0 (boostable up to 200%)
+    let currentSoundStyle = 'chime'; // 'chime', 'school', 'digital', 'mute'
+    let enableConfetti = true;
+    let enableScreenFlash = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGainNode = audioCtx.createGain();
+        masterGainNode.gain.setValueAtTime(currentVolume, audioCtx.currentTime);
+        masterGainNode.connect(audioCtx.destination);
+      }
+    }
+
+    function setMasterVolume(gainVal) {
+      currentVolume = gainVal;
+      if (masterGainNode && audioCtx) {
+        masterGainNode.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      }
+    }
+
+    // Play synthesized tones through master gain
+    function playTone(freq, startTime, duration, type = 'sine', gainLevel = 0.25) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const noteGain = audioCtx.createGain();
+      
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      noteGain.gain.setValueAtTime(0.001, startTime);
+      noteGain.gain.linearRampToValueAtTime(gainLevel, startTime + 0.02);
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      osc.connect(noteGain);
+      noteGain.connect(masterGainNode);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    }
+
+    // Initialization Flag to prevent startup alert cascades
+    let isInitialLoad = true;
+
+    // Instructor Name State (Persisted in localStorage)
+    let instructorName = localStorage.getItem('seasac_instructor_name') || '고병화';
+
+    function updateInstructorNameUI() {
+      const headerEl = document.getElementById('headerInstructorName');
+      if (headerEl) headerEl.innerText = instructorName;
+    }
+
+    function editInstructorName() {
+      const newName = prompt('강사명을 입력해 주세요:', instructorName);
+      if (newName !== null) {
+        const trimmed = newName.trim();
+        if (trimmed) {
+          instructorName = trimmed;
+          localStorage.setItem('seasac_instructor_name', trimmed);
+          updateInstructorNameUI();
+          showToast(`강사명이 '${trimmed}'(으)로 설정되었습니다.`, 'lecture');
+        }
+      }
+    }
+
+    // Weekday-only Course Day Calculation (Starting from 2026-10-14 = Day 1)
+    function calculateCourseDay(currentDate = new Date()) {
+      const startDate = new Date(2026, 9, 14); // 2026-10-14 (month index 9 = October)
+      startDate.setHours(0, 0, 0, 0);
+      const target = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), 0, 0, 0);
+      if (target < startDate) return { dayCount: 0, isWeekend: false, isBefore: true };
+      
+      let count = 0;
+      let cur = new Date(startDate);
+      while (cur <= target) {
+        const dayOfWeek = cur.getDay(); // 0 = Sun, 6 = Sat
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      const todayDayOfWeek = target.getDay();
+      const isWeekend = (todayDayOfWeek === 0 || todayDayOfWeek === 6);
+      return { dayCount: count, isWeekend, isBefore: false };
+    }
+
+    // Centered Welcome Banner on Initial Page Load
+    function showWelcomeBanner() {
+      const banner = document.getElementById('welcomeBannerOverlay');
+      const greetingEl = document.getElementById('welcomeBannerGreeting');
+      const dayEl = document.getElementById('welcomeBannerDay');
+      if (!banner || !greetingEl || !dayEl) return;
+
+      const currentName = localStorage.getItem('seasac_instructor_name') || instructorName || '고병화';
+      const dayInfo = calculateCourseDay(new Date());
+
+      greetingEl.innerText = `${currentName} 강사님, 어서오세요! 반갑습니다 🌱`;
+      
+      if (dayInfo.isBefore) {
+        dayEl.innerText = `새싹 프로그램 개강 전입니다. (개강일: 2026-10-14)`;
+      } else if (dayInfo.isWeekend) {
+        dayEl.innerText = `오늘은 새싹 프로그램 ${dayInfo.dayCount}일차 완료 후 주말입니다. 편안한 주말 되세요! ✨`;
+      } else {
+        dayEl.innerText = `오늘은 새싹 프로그램 ${dayInfo.dayCount}일차입니다.`;
+      }
+
+      // Smooth Fade-in
+      banner.classList.remove('opacity-0', 'scale-95');
+      banner.classList.add('opacity-100', 'scale-100');
+
+      // 3.0s display, then smooth fade out & remove from DOM
+      setTimeout(() => {
+        banner.classList.remove('opacity-100', 'scale-100');
+        banner.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+          if (banner.parentNode) {
+            banner.remove();
+          }
+        }, 700);
+      }, 3000);
+    }
+
+    // Synthesized Deep Bass Firework Sound ("Whistle & Low Bass Boom/Pop" via Web Audio API)
+    function playFireworkFinaleAudio() {
+      if (isInitialLoad || !isSoundEnabled || currentSoundStyle === 'mute') return;
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      // Multi-firework explosion sequence at t=0, t=0.6s, t=1.2s
+      [0, 0.6, 1.2].forEach((delay) => {
+        const launchTime = audioCtx.currentTime + delay;
+        
+        // 1. Whistle (rising frequency)
+        const whistleOsc = audioCtx.createOscillator();
+        const whistleGain = audioCtx.createGain();
+        whistleOsc.type = 'triangle';
+        whistleOsc.frequency.setValueAtTime(420, launchTime);
+        whistleOsc.frequency.exponentialRampToValueAtTime(1400, launchTime + 0.35);
+        
+        whistleGain.gain.setValueAtTime(0.001, launchTime);
+        whistleGain.gain.linearRampToValueAtTime(0.18 * currentVolume, launchTime + 0.05);
+        whistleGain.gain.exponentialRampToValueAtTime(0.0001, launchTime + 0.36);
+        
+        whistleOsc.connect(whistleGain);
+        whistleGain.connect(masterGainNode);
+        whistleOsc.start(launchTime);
+        whistleOsc.stop(launchTime + 0.37);
+
+        // 2. Deep Bass Boom / Explosion at t + 0.38s
+        const boomTime = launchTime + 0.38;
+        const boomOsc = audioCtx.createOscillator();
+        const boomGain = audioCtx.createGain();
+        boomOsc.type = 'sine';
+        boomOsc.frequency.setValueAtTime(160, boomTime);
+        boomOsc.frequency.exponentialRampToValueAtTime(32, boomTime + 0.6);
+
+        boomGain.gain.setValueAtTime(0.001, boomTime);
+        boomGain.gain.linearRampToValueAtTime(0.48 * currentVolume, boomTime + 0.02);
+        boomGain.gain.exponentialRampToValueAtTime(0.0001, boomTime + 0.65);
+
+        boomOsc.connect(boomGain);
+        boomGain.connect(masterGainNode);
+        boomOsc.start(boomTime);
+        boomOsc.stop(boomTime + 0.66);
+
+        // 3. Crackle Noise Burst
+        try {
+          const bufferSize = audioCtx.sampleRate * 0.15;
+          const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
+          }
+          const noise = audioCtx.createBufferSource();
+          noise.buffer = buffer;
+          const noiseGain = audioCtx.createGain();
+          noiseGain.gain.setValueAtTime(0.25 * currentVolume, boomTime);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, boomTime + 0.15);
+          noise.connect(noiseGain);
+          noiseGain.connect(masterGainNode);
+          noise.start(boomTime);
+        } catch (e) {
+          // Fallback if audio buffer fails
+        }
+      });
+    }
+
+    // Centered Glassmorphism Celebration Banner
+    function showFinaleBanner() {
+      const banner = document.getElementById('finaleBannerOverlay');
+      if (!banner) return;
+      banner.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+      banner.classList.add('opacity-100', 'scale-100');
+
+      setTimeout(() => {
+        banner.classList.remove('opacity-100', 'scale-100');
+        banner.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+      }, 3500);
+    }
+
+    // Multi-angle screen confetti burst for Finale
+    function triggerFinaleConfetti() {
+      if (isInitialLoad || !enableConfetti) return;
+      const duration = 4000;
+      const end = Date.now() + duration;
+      const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#e11d48'];
+
+      (function frame() {
+        confetti({
+          particleCount: 7,
+          angle: 60,
+          spread: 70,
+          origin: { x: 0, y: 0.8 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 7,
+          angle: 120,
+          spread: 70,
+          origin: { x: 1, y: 0.8 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 10,
+          angle: 90,
+          spread: 100,
+          origin: { x: 0.5, y: 0.6 },
+          colors: colors
+        });
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+    }
+
+    function triggerFinaleCelebration() {
+      if (isInitialLoad) return;
+      showToast('🎉 오늘 모든 수업(7교시)이 성공적으로 종료되었습니다! 퇴근을 축하합니다.', 'lecture');
+      triggerFinaleConfetti();
+      playFireworkFinaleAudio();
+      showFinaleBanner();
+    }
+
+    function testFinaleCelebration() {
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      triggerFinaleCelebration();
+    }
+
+    // Play Chime based on current sound style & event
+    function playChime(eventType = 'class_end') {
+      if (isInitialLoad || !isSoundEnabled || currentSoundStyle === 'mute') return;
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+
+      if (currentSoundStyle === 'digital') {
+        // Digital Beep Style
+        if (eventType === 'class_end') {
+          playTone(880, now, 0.12, 'square', 0.2);
+          playTone(1174.66, now + 0.16, 0.25, 'square', 0.25);
+        } else if (eventType === 'break_end') {
+          playTone(784, now, 0.15, 'triangle', 0.3);
+          playTone(784, now + 0.22, 0.15, 'triangle', 0.3);
+          playTone(1046.5, now + 0.44, 0.35, 'square', 0.35);
+        } else { // lunch
+          playTone(659.25, now, 0.15, 'sine', 0.25);
+          playTone(783.99, now + 0.18, 0.15, 'sine', 0.25);
+          playTone(1046.5, now + 0.36, 0.35, 'sine', 0.3);
+        }
+        return;
+      }
+
+      if (currentSoundStyle === 'school') {
+        // Classic School Bell Tone (Westminster style melody)
+        if (eventType === 'class_end') {
+          // Joyful bell: G4 -> B4 -> D5 -> G5
+          playTone(392.00, now, 0.5, 'sine', 0.3);
+          playTone(493.88, now + 0.35, 0.5, 'sine', 0.3);
+          playTone(587.33, now + 0.70, 0.6, 'sine', 0.3);
+          playTone(783.99, now + 1.05, 0.9, 'sine', 0.35);
+        } else if (eventType === 'break_end') {
+          // Punctual School Bell: E5 -> C5 -> D5 -> G4
+          playTone(659.25, now, 0.45, 'triangle', 0.35);
+          playTone(523.25, now + 0.35, 0.45, 'triangle', 0.35);
+          playTone(587.33, now + 0.70, 0.45, 'triangle', 0.35);
+          playTone(392.00, now + 1.05, 0.8, 'triangle', 0.4);
+        } else {
+          // Lunch Bell
+          playTone(523.25, now, 0.4, 'sine', 0.3);
+          playTone(659.25, now + 0.3, 0.4, 'sine', 0.3);
+          playTone(783.99, now + 0.6, 0.8, 'sine', 0.35);
+        }
+        return;
+      }
+
+      // Default: 'chime' (Clear Chime Bell)
+      if (eventType === 'class_end') {
+        // Joyful liberation rising chime: D5 -> F#5 -> A5 -> D6
+        playTone(587.33, now, 0.4, 'sine', 0.25);
+        playTone(739.99, now + 0.18, 0.45, 'sine', 0.25);
+        playTone(880.00, now + 0.36, 0.55, 'sine', 0.3);
+        playTone(1174.66, now + 0.56, 0.9, 'sine', 0.35);
+      } else if (eventType === 'break_end') {
+        // Focus chime: A4 -> E5 -> A5 (clear double gong)
+        playTone(440.00, now, 0.35, 'triangle', 0.3);
+        playTone(659.25, now + 0.22, 0.35, 'triangle', 0.35);
+        playTone(880.00, now + 0.44, 0.8, 'triangle', 0.4);
+      } else {
+        // Lunch chime
+        playTone(523.25, now, 0.3, 'sine', 0.25);
+        playTone(659.25, now + 0.2, 0.35, 'sine', 0.25);
+        playTone(783.99, now + 0.4, 0.7, 'sine', 0.3);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Visual Effects (Visual Alarm: Confetti & Screen Strobe)
+    // -------------------------------------------------------------
+    function triggerConfettiBlast() {
+      if (isInitialLoad || !enableConfetti || typeof confetti !== 'function') return;
+
+      const duration = 2.5 * 1000;
+      const end = Date.now() + duration;
+
+      // Left and right dual cannon
+      (function frame() {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 65,
+          origin: { x: 0, y: 0.75 },
+          colors: ['#e11d48', '#2563eb', '#10b981', '#f59e0b', '#8b5cf6']
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 65,
+          origin: { x: 1, y: 0.75 },
+          colors: ['#e11d48', '#2563eb', '#10b981', '#f59e0b', '#8b5cf6']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+    }
+
+    function triggerScreenFlash() {
+      if (isInitialLoad || !enableScreenFlash) return;
+      const overlay = document.getElementById('screenFlashOverlay');
+      if (!overlay) return;
+
+      overlay.classList.remove('flash-active');
+      void overlay.offsetWidth; // trigger reflow
+      overlay.classList.add('flash-active');
+
+      setTimeout(() => {
+        overlay.classList.remove('flash-active');
+      }, 2600);
+    }
+
+    function triggerOneShotOvertimeFlash() {
+      if (isInitialLoad || !enableScreenFlash) return;
+      const card = document.getElementById('mainTimerCard');
+      if (!card) return;
+      card.classList.add('overtime-flash');
+      setTimeout(() => {
+        card.classList.remove('overtime-flash');
+      }, 1000);
+    }
+
+    // -------------------------------------------------------------
+    // Standard Timetable Blueprint (Aligned to 18:00 sharp finish! All 15m breaks)
+    // 1교시: 10:00 ~ 10:50 (50) / 휴식 10:50 ~ 11:05 (15)
+    // 2교시: 11:05 ~ 11:55 (50) / 휴식 11:55 ~ 12:10 (15)
+    // 3교시: 12:10 ~ 12:30 (점심 전 유동 진행, nominal 20분)
+    // 점심 : 12:30 ~ 14:00 (90분 고정)
+    // 4교시: 14:00 ~ 14:50 (50) / 휴식 14:50 ~ 15:05 (15)
+    // 5교시: 15:05 ~ 15:55 (50) / 휴식 15:55 ~ 16:10 (15)
+    // 6교시: 16:10 ~ 17:00 (50) / 휴식 17:00 ~ 17:15 (15)
+    // 7교시: 17:15 ~ 18:00 (45분 진행 -> 18:00 정각 종료!)
+    // -------------------------------------------------------------
+    const SCHEDULE_BLUEPRINT = [
+      { id: 1, name: '1교시', start: '10:00', end: '10:50', duration: 50 },
+      { id: 'b1', name: '1교시 휴식', start: '10:50', end: '11:05', duration: 15, isBreak: true },
+      { id: 2, name: '2교시', start: '11:05', end: '11:55', duration: 50 },
+      { id: 'b2', name: '2교시 휴식', start: '11:55', end: '12:10', duration: 15, isBreak: true },
+      { id: 3, name: '3교시', start: '12:10', end: '12:30', duration: 20, isDynamic: true },
+      { id: 'lunch', name: '점심시간 (고정)', start: '12:30', end: '14:00', duration: 90, isLunch: true },
+      { id: 4, name: '4교시', start: '14:00', end: '14:50', duration: 50 },
+      { id: 'b4', name: '4교시 휴식', start: '14:50', end: '15:05', duration: 15, isBreak: true },
+      { id: 5, name: '5교시', start: '15:05', end: '15:55', duration: 50 },
+      { id: 'b5', name: '5교시 휴식', start: '15:55', end: '16:10', duration: 15, isBreak: true },
+      { id: 6, name: '6교시', start: '16:10', end: '17:00', duration: 50 },
+      { id: 'b6', name: '6교시 휴식', start: '17:00', end: '17:15', duration: 15, isBreak: true },
+      { id: 7, name: '7교시 (마지막 45분)', start: '17:15', end: '18:00', duration: 45, isFinal: true }
+    ];
+
+    // State Variables
+    let currentMode = 'CLASS'; // 'CLASS', 'BREAK', 'LUNCH', 'PRACTICE'
+    let currentPeriod = 1;
+    let customBreakDuration = 15;
+    let customClassDuration = 50;
+
+    let segmentStartTime = new Date();
+    let targetEndTime = new Date();
+    let initialDurationMs = 50 * 60 * 1000;
+    let hasAlertFired = false;
+    let hasWarningFired = false;
+    let hasOvertimeFlashFired = false;
+    let hasMorningAlertFired = false;
+    let hasFirstClassStarted = false;
+
+    // Pause & Resume State
+    let isPaused = false;
+    let pauseStartedTime = null;
+
+    // Session Log Export Array
+    const sessionLogHistory = [];
+
+    // Ambient BGM State
+    let enableAmbientBgm = false;
+    let ambientGainNode = null;
+    let ambientOsc1 = null;
+    let ambientOsc2 = null;
+
+    
+    // Theme Management (Light / Dark Obsidian)
+    let currentTheme = localStorage.getItem('seasac_timer_theme') || 'light';
+
+    function setTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('seasac_timer_theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark');
+      }
+      updateThemeSwitcherUI();
+    }
+
+    function updateThemeSwitcherUI() {
+      const lightBtn = document.getElementById('themeLightBtn');
+      const darkBtn = document.getElementById('themeDarkBtn');
+      if (!lightBtn || !darkBtn) return;
+
+      if (currentTheme === 'dark') {
+        darkBtn.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500');
+        lightBtn.classList.remove('ring-2', 'ring-black', 'border-black');
+      } else {
+        lightBtn.classList.add('ring-2', 'ring-black', 'border-black');
+        darkBtn.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
+      }
+    }
+
+    // Settings Modal Tab Navigation
+    function switchSettingsTab(tab) {
+      const tabAppearance = document.getElementById('settingsTabAppearance');
+      const tabAlerts = document.getElementById('settingsTabAlerts');
+      const btnAppearance = document.getElementById('settingsTabBtnAppearance');
+      const btnAlerts = document.getElementById('settingsTabBtnAlerts');
+      if (!tabAppearance || !tabAlerts) return;
+
+      if (tab === 'appearance') {
+        tabAppearance.classList.remove('hidden');
+        tabAlerts.classList.add('hidden');
+        btnAppearance.className = 'flex-1 pb-2.5 font-bold border-b-2 border-black dark:border-white text-black dark:text-white transition-all';
+        btnAlerts.className = 'flex-1 pb-2.5 font-bold border-b-2 border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all';
+      } else {
+        tabAppearance.classList.add('hidden');
+        tabAlerts.classList.remove('hidden');
+        btnAlerts.className = 'flex-1 pb-2.5 font-bold border-b-2 border-black dark:border-white text-black dark:text-white transition-all';
+        btnAppearance.className = 'flex-1 pb-2.5 font-bold border-b-2 border-transparent text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all';
+      }
+    }
+
+    // Practice (Lab) Target Time State & Modal Control
+    let currentPracticeTask = '';
+
+    function openPracticeSetupModal() {
+      updatePracticeSnappedChips();
+      const modal = document.getElementById('practiceSetupModal');
+      if (modal) modal.classList.remove('hidden');
+      const input = document.getElementById('practiceTargetInput');
+      if (input && !input.value) {
+        // default to next 20 minutes
+        const defaultTarget = new Date(Date.now() + 20 * 60000);
+        input.value = formatClock(defaultTarget);
+      }
+    }
+
+    function closePracticeSetupModal() {
+      const modal = document.getElementById('practiceSetupModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updatePracticeSnappedChips() {
+      const container = document.getElementById('practiceSnappedChips');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const now = new Date();
+      const curMinsTotal = now.getHours() * 60 + now.getMinutes();
+
+      // Recommend 4 natural snapped completion points (+10m, +15m, +20m, +30m snapped to 5 or 10)
+      const increments = [10, 15, 20, 30];
+      const addedTimes = new Set();
+
+      increments.forEach(inc => {
+        const rawTarget = curMinsTotal + inc;
+        const snappedTarget = Math.ceil(rawTarget / 5) * 5;
+        const diffMin = snappedTarget - curMinsTotal;
+        if (diffMin >= 5 && diffMin <= 120) {
+          const h = Math.floor(snappedTarget / 60) % 24;
+          const m = snappedTarget % 60;
+          const timeStr = `${pad(h)}:${pad(m)}`;
+          if (!addedTimes.has(timeStr)) {
+            addedTimes.add(timeStr);
+            const btn = document.createElement('button');
+            btn.className = 'tactile-btn p-2.5 rounded-xl border border-blue-300 dark:border-blue-700/60 bg-blue-50/70 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-800 dark:text-blue-300 font-mono font-bold text-xs flex items-center justify-between shadow-2xs';
+            btn.innerHTML = `<span>~ ${timeStr}</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-200/60 dark:bg-blue-800/60">${diffMin}분</span>`;
+            btn.onclick = () => startPracticeWithTargetTime(h, m);
+            container.appendChild(btn);
+          }
+        }
+      });
+    }
+
+    function startPracticeWithTargetTime(targetHour, targetMin) {
+      const now = new Date();
+      const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), targetHour, targetMin, 0);
+      
+      // If target time is earlier than now, assume next day or reject
+      if (target <= now) {
+        showToast('마감 시각은 현재 시각 이후여야 합니다.', 'warning');
+        return;
+      }
+
+      const durationMs = target.getTime() - now.getTime();
+      const taskInput = document.getElementById('practiceTaskInput');
+      currentPracticeTask = taskInput ? taskInput.value.trim() : '';
+
+      currentMode = 'PRACTICE';
+      segmentStartTime = now;
+      initialDurationMs = durationMs;
+      targetEndTime = target;
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+
+      instantResetGaugeToFull();
+      applyThemeStyles('PRACTICE');
+      updateNextEventInfo();
+      updatePracticeBannerUI();
+      closePracticeSetupModal();
+
+      const totalMin = Math.round(durationMs / 60000);
+      showToast(`💻 ~ ${formatClock(target)}까지 실습(${totalMin}분)이 시작되었습니다!`, 'break');
+    }
+
+    function startPracticeFromInput() {
+      const input = document.getElementById('practiceTargetInput');
+      if (!input || !input.value) {
+        showToast('실습 마감 시각을 입력해 주세요.', 'warning');
+        return;
+      }
+      const [h, m] = input.value.split(':').map(Number);
+      startPracticeWithTargetTime(h, m);
+    }
+
+    function updatePracticeBannerUI() {
+      const banner = document.getElementById('practiceActiveBanner');
+      const timeSpan = document.getElementById('practiceBannerTime');
+      const taskDiv = document.getElementById('practiceBannerTask');
+      const taskText = document.getElementById('practiceTaskText');
+      if (!banner) return;
+
+      if (currentMode === 'PRACTICE') {
+        banner.classList.remove('hidden');
+        if (timeSpan) timeSpan.innerText = `~ ${formatClock(targetEndTime)} 까지 실습 진행 중`;
+        if (currentPracticeTask) {
+          if (taskDiv) taskDiv.classList.remove('hidden');
+          if (taskText) taskText.innerText = currentPracticeTask;
+        } else {
+          if (taskDiv) taskDiv.classList.add('hidden');
+        }
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    // Picture-in-Picture State
+    let pipStream = null;
+
+    // Cumulative Stats
+    let totalLectureSeconds = 0;
+    let totalBreakSeconds = 0;
+    let totalOvertimeSeconds = 0;
+    let completedSessionsCount = 0;
+
+    // DOM Elements
+    const wallClock = document.getElementById('wallClock');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerDisplayWrapper = document.getElementById('timerDisplayWrapper');
+    const stateBadge = document.getElementById('stateBadge');
+    const stateDot = document.getElementById('stateDot');
+    const targetEndTimeText = document.getElementById('targetEndTimeText');
+    const nextEventText = document.getElementById('nextEventText');
+    const elapsedTimeText = document.getElementById('elapsedTimeText');
+    const currentStartTimeBadge = document.getElementById('currentStartTimeBadge');
+    const quickSubTargetEnd = document.getElementById('quickSubTargetEnd');
+    const startTimeEditModal = document.getElementById('startTimeEditModal');
+    const editStartTimeInput = document.getElementById('editStartTimeInput');
+    const overtimeBadge = document.getElementById('overtimeBadge');
+    const progressRing = document.getElementById('progressRing');
+    const overtimeRing = document.getElementById('overtimeRing');
+    const bgTrackCircle = document.getElementById('bgTrackCircle');
+    const mainTimerCard = document.getElementById('mainTimerCard');
+    const glowBackdrop = document.getElementById('glowBackdrop');
+    const warningAmbientRing = document.getElementById('warningAmbientRing');
+    const masterActionBtn = document.getElementById('masterActionBtn');
+    const actionBtnIcon = document.getElementById('actionBtnIcon');
+    const actionBtnText = document.getElementById('actionBtnText');
+
+    const quickPauseBtn = document.getElementById('quickPauseBtn');
+    const quickPauseIcon = document.getElementById('quickPauseIcon');
+    const quickPauseLabel = document.getElementById('quickPauseLabel');
+    const pauseIndicatorBadge = document.getElementById('pauseIndicatorBadge');
+    const zoomExpandBtn = document.getElementById('zoomExpandBtn');
+    const zoomBtnLabel = document.getElementById('zoomBtnLabel');
+    const zoomIconExpand = document.getElementById('zoomIconExpand');
+    const zoomIconCompress = document.getElementById('zoomIconCompress');
+    const shortcutGuidePanel = document.getElementById('shortcutGuidePanel');
+    const shortcutChevron = document.getElementById('shortcutChevron');
+
+    const pipCanvas = document.getElementById('pipCanvas');
+    const pipCtx = pipCanvas ? pipCanvas.getContext('2d') : null;
+    const pipVideo = document.getElementById('pipVideo');
+
+    const statTotalLecture = document.getElementById('statTotalLecture');
+    const statTotalBreak = document.getElementById('statTotalBreak');
+    const statTotalOver = document.getElementById('statTotalOver');
+    const statCompletedCount = document.getElementById('statCompletedCount');
+    const sessionLogTableBody = document.getElementById('sessionLogTableBody');
+    const emptyLogPlaceholder = document.getElementById('emptyLogPlaceholder');
+
+    const settingsModal = document.getElementById('settingsModal');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeValueLabel = document.getElementById('volumeValueLabel');
+    const soundStyleSelect = document.getElementById('soundStyleSelect');
+    const confettiToggle = document.getElementById('confettiToggle');
+    const screenFlashToggle = document.getElementById('screenFlashToggle');
+    const ambientBgmToggle = document.getElementById('ambientBgmToggle');
+
+    const RING_CIRCUMFERENCE = 2 * Math.PI * 115; // 722.56
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function formatClock(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+    function formatFullClock(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+    function formatDuration(ms) {
+      const totalSec = Math.floor(Math.abs(ms) / 1000);
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${pad(m)}:${pad(s)}`;
+    }
+    function formatHourMin(totalSeconds) {
+      if (!totalSeconds || totalSeconds <= 0) return '00:00';
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      if (h === 0) return `${m}분`;
+      return `${h}시간 ${m}분`;
+    }
+
+    // -------------------------------------------------------------
+    // Cumulative Statistics & Target Comparison (315m / 75m)
+    // -------------------------------------------------------------
+    const TARGET_LECTURE_MINUTES = 315; // 50m*5(1,2,4,5,6) + 20m(3교시) + 45m(7교시) = 315분 (05:15)
+    const TARGET_BREAK_MINUTES = 75;    // 정규 5회 휴식(15m*5) = 75분 (01:15)
+    const TARGET_LECTURE_SECONDS = TARGET_LECTURE_MINUTES * 60; // 18,900초
+    const TARGET_BREAK_SECONDS = TARGET_BREAK_MINUTES * 60;     // 4,500초
+
+    function openTargetStatsModal() {
+      updateTargetStatsModalUI();
+      const modal = document.getElementById('targetStatsModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeTargetStatsModal() {
+      const modal = document.getElementById('targetStatsModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function toggleLectureStatMode() {
+      openTargetStatsModal();
+    }
+
+    function toggleBreakStatMode() {
+      openTargetStatsModal();
+    }
+
+    function updateTargetStatsModalUI(now = new Date()) {
+      const { liveLectureSec, liveBreakSec } = getLiveStats(now);
+
+      const lecMin = Math.floor(liveLectureSec / 60);
+      const lecPercent = Math.min(100, Math.round((liveLectureSec / TARGET_LECTURE_SECONDS) * 100));
+      const lecRemainMin = Math.max(0, TARGET_LECTURE_MINUTES - lecMin);
+
+      const brkMin = Math.floor(liveBreakSec / 60);
+      const brkPercent = Math.round((liveBreakSec / TARGET_BREAK_SECONDS) * 100);
+      const brkRemainMin = Math.max(0, TARGET_BREAK_MINUTES - brkMin);
+
+      // Section 1: Lecture Progress
+      const modalTargetLecPct = document.getElementById('modalTargetLecPct');
+      const modalTargetLecActual = document.getElementById('modalTargetLecActual');
+      const modalTargetLecBar = document.getElementById('modalTargetLecBar');
+      const modalTargetLecRemaining = document.getElementById('modalTargetLecRemaining');
+      if (modalTargetLecPct) modalTargetLecPct.innerText = `${lecPercent}%`;
+      if (modalTargetLecActual) modalTargetLecActual.innerText = lecMin;
+      if (modalTargetLecBar) modalTargetLecBar.style.width = `${Math.min(100, lecPercent)}%`;
+      if (modalTargetLecRemaining) modalTargetLecRemaining.innerText = `남은 강의: ${lecRemainMin}분`;
+
+      // Section 2: Break Progress
+      const modalTargetBrkPct = document.getElementById('modalTargetBrkPct');
+      const modalTargetBrkActual = document.getElementById('modalTargetBrkActual');
+      const modalTargetBrkBar = document.getElementById('modalTargetBrkBar');
+      const modalTargetBrkRemaining = document.getElementById('modalTargetBrkRemaining');
+      if (modalTargetBrkPct) modalTargetBrkPct.innerText = `${brkPercent}%`;
+      if (modalTargetBrkActual) modalTargetBrkActual.innerText = brkMin;
+      if (modalTargetBrkBar) {
+        modalTargetBrkBar.style.width = `${Math.min(100, brkPercent)}%`;
+        modalTargetBrkBar.className = brkPercent > 100 
+          ? 'bg-amber-500 h-full rounded-full transition-all duration-500' 
+          : 'bg-blue-500 h-full rounded-full transition-all duration-500';
+      }
+      if (modalTargetBrkRemaining) modalTargetBrkRemaining.innerText = `남은 휴식: ${brkRemainMin}분`;
+
+      // Section 3: Summary Briefing
+      const modalSummaryOvertime = document.getElementById('modalSummaryOvertime');
+      const modalSummaryPeriods = document.getElementById('modalSummaryPeriods');
+      const modalSummaryText = document.getElementById('modalSummaryText');
+
+      const classLogCount = sessionLogHistory.filter(item => item.type === 'CLASS').length;
+      const countToDisplay = Math.min(7, Math.max(completedSessionsCount, classLogCount));
+
+      if (modalSummaryOvertime) modalSummaryOvertime.innerText = `+${formatHourMin(totalOvertimeSeconds)}`;
+      if (modalSummaryPeriods) modalSummaryPeriods.innerText = `${countToDisplay} / 7 교시`;
+
+      if (modalSummaryText) {
+        if (totalOvertimeSeconds > 300) {
+          const overMin = Math.round(totalOvertimeSeconds / 60);
+          modalSummaryText.innerHTML = `<span class="text-rose-600 dark:text-rose-400 font-bold">⚠️ 오버타임이 약 ${overMin}분 누적되었습니다.</span> 18:00 정각 퇴근을 위해 세션 시간 조율이 권장됩니다.`;
+        } else if (countToDisplay >= 7) {
+          modalSummaryText.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-bold">🏁 오늘 7교시 일정이 모두 완료되었습니다!</span> 수고하셨습니다.`;
+        } else {
+          modalSummaryText.innerHTML = `정규 일정에 맞춰 순조롭게 진행 중입니다. (목표 강의 315분 · 보장 휴식 75분 기준)`;
+        }
+      }
+    }
+
+    function getLiveStats(now = new Date()) {
+      let liveLectureSec = totalLectureSeconds;
+      let liveBreakSec = totalBreakSeconds;
+
+      if (!isPaused && segmentStartTime) {
+        const currentSegmentSec = Math.max(0, Math.floor((now.getTime() - segmentStartTime.getTime()) / 1000));
+        if (currentMode === 'CLASS' || currentMode === 'PRACTICE') {
+          liveLectureSec += currentSegmentSec;
+        } else if (currentMode === 'BREAK') {
+          liveBreakSec += currentSegmentSec;
+        }
+      }
+
+      return { liveLectureSec, liveBreakSec };
+    }
+
+    function updateCumulativeStatsUI(now = new Date()) {
+      const { liveLectureSec, liveBreakSec } = getLiveStats(now);
+
+      // 1. Lecture Stats
+      const lecPercent = (liveLectureSec / TARGET_LECTURE_SECONDS) * 100;
+      const statTotalLecture = document.getElementById('statTotalLecture');
+      const statLectureBar = document.getElementById('statLectureBar');
+
+      if (statTotalLecture) statTotalLecture.innerText = formatHourMin(liveLectureSec);
+      if (statLectureBar) statLectureBar.style.width = `${Math.min(100, Math.max(0, lecPercent))}%`;
+
+      // 2. Break Stats
+      const brkPercent = (liveBreakSec / TARGET_BREAK_SECONDS) * 100;
+      const statTotalBreak = document.getElementById('statTotalBreak');
+      const statBreakBar = document.getElementById('statBreakBar');
+
+      if (statTotalBreak) statTotalBreak.innerText = formatHourMin(liveBreakSec);
+      if (statBreakBar) {
+        statBreakBar.style.width = `${Math.min(100, Math.max(0, brkPercent))}%`;
+        statBreakBar.className = brkPercent > 100
+          ? 'bg-amber-500 h-full rounded-full transition-all duration-300'
+          : 'bg-blue-500 h-full rounded-full transition-all duration-300';
+      }
+
+      // 3. Completed Periods Bar & Percent
+      const classLogCount = sessionLogHistory.filter(item => item.type === 'CLASS').length;
+      const countToDisplay = Math.min(7, Math.max(completedSessionsCount, classLogCount));
+      const periodPercent = Math.round((countToDisplay / 7) * 100);
+      const statCompletedElem = document.getElementById('statCompletedCount');
+      const statPeriodBar = document.getElementById('statPeriodBar');
+      const statPeriodPercent = document.getElementById('statPeriodPercent');
+      if (statCompletedElem) statCompletedElem.innerText = `${countToDisplay} / 7`;
+      if (statPeriodBar) statPeriodBar.style.width = `${Math.min(100, periodPercent)}%`;
+      if (statPeriodPercent) statPeriodPercent.innerText = `${periodPercent}%`;
+
+      // 4. Overtime Bar & Text
+      const statTotalOverElem = document.getElementById('statTotalOver');
+      const statOverBar = document.getElementById('statOverBar');
+      if (statTotalOverElem) statTotalOverElem.innerText = `+${formatHourMin(totalOvertimeSeconds)}`;
+      if (statOverBar) {
+        const overPercent = Math.min(100, (totalOvertimeSeconds / (30 * 60)) * 100);
+        statOverBar.style.width = `${overPercent}%`;
+      }
+
+      // 5. Update Target Comparison Modal in real-time if open
+      const targetStatsModal = document.getElementById('targetStatsModal');
+      if (targetStatsModal && !targetStatsModal.classList.contains('hidden')) {
+        updateTargetStatsModalUI(now);
+      }
+    }
+
+    // 5-second Toast Alert exclusively for state events
+    function showToast(message, type = 'lecture') {
+      if (isInitialLoad) return;
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      
+      let icon = '🔔';
+      if (type === 'break') icon = '☕';
+      if (type === 'lunch') icon = '🍱';
+      if (type === 'over') icon = '⏰';
+      if (type === 'warning') icon = '⚠️';
+
+      toast.className = `p-4 rounded-2xl bg-white border border-black/20 text-black shadow-xl backdrop-blur-xl flex items-center justify-between pointer-events-auto transform transition-all duration-300 translate-x-full opacity-0`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-xl">${icon}</span>
+          <span class="text-xs font-bold text-black leading-relaxed">${message}</span>
+        </div>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-x-full', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => toast.remove(), 400);
+      }, 5000);
+    }
+
+    // Blueprint Timetable Render (18:00 finish alignment)
+    function renderScheduleBlueprint() {
+      const list = document.getElementById('timetableScheduleList');
+      list.innerHTML = '';
+      SCHEDULE_BLUEPRINT.forEach(item => {
+        const row = document.createElement('div');
+        row.id = `blueprint-row-${item.id}`;
+        row.className = `flex items-center justify-between px-3 py-2 rounded-xl transition-all border ${
+          item.isLunch ? 'bg-zinc-100 text-black border-black/20 font-semibold' :
+          item.isBreak ? 'text-zinc-500 bg-zinc-50 border-transparent' : 'bg-white text-zinc-800 border-black/10'
+        }`;
+        
+        let badge = `<span class="text-zinc-500 font-mono">${item.duration}분</span>`;
+        if (item.isDynamic) badge = `<span class="text-blue-700 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/50 px-1.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-800 text-[10px]">점심 전 유동</span>`;
+        if (item.isFinal) badge = `<span class="text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200 text-[10px]">45분 · 18:00 퇴근</span>`;
+        if (item.isLunch) badge = `<span class="text-white font-bold text-[10px] px-1.5 py-0.5 rounded-md bg-black border border-black">점심 고정 90분</span>`;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full ${item.isLunch ? 'bg-black' : (item.isBreak ? 'bg-zinc-400' : 'bg-black')}"></span>
+            <span class="font-bold tracking-tight">${item.name}</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="font-mono text-zinc-500 text-[11px]">${item.start} ~ ${item.end}</span>
+            ${badge}
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+        // Instant Gauge Reset to 100% full (no reverse fill animation)
+    function instantResetGaugeToFull() {
+      if (!progressRing) return;
+      progressRing.style.transition = 'none';
+      progressRing.style.strokeDashoffset = '0';
+      if (overtimeRing) {
+        overtimeRing.style.display = 'none';
+        overtimeRing.style.strokeDashoffset = RING_CIRCUMFERENCE;
+      }
+      void progressRing.offsetHeight; // force reflow
+      requestAnimationFrame(() => {
+        progressRing.style.transition = 'stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease';
+      });
+    }
+
+    // Dynamic Theme Swapping
+    function applyThemeStyles(mode) {
+      mainTimerCard.classList.remove('lecture-glow', 'break-glow', 'lunch-glow', 'overtime-glow', 'warning-glow');
+      warningAmbientRing.classList.add('opacity-0');
+      warningAmbientRing.classList.remove('animate-ambient-red');
+      timerDisplay.classList.remove('text-rose-600', 'animate-heartbeat', 'animate-countdown-pulse');
+      progressRing.classList.remove('animate-ring-pulse');
+      
+      // Update chips visual state
+      document.querySelectorAll('.period-chip').forEach(btn => {
+        btn.classList.remove('ring-2', 'ring-black', 'bg-black', 'text-white', 'ring-blue-600', 'bg-blue-600');
+        if (mode === 'LUNCH' && btn.dataset.period === 'lunch') {
+          btn.classList.add('ring-2', 'ring-black', 'bg-black', 'text-white');
+        } else if (mode === 'PRACTICE' && btn.dataset.period === 'practice') {
+          btn.classList.add('ring-2', 'ring-blue-600', 'bg-blue-600', 'text-white');
+        } else if (btn.dataset.period == currentPeriod && mode !== 'LUNCH' && mode !== 'PRACTICE') {
+          btn.classList.add('ring-2', 'ring-black', 'bg-black', 'text-white');
+        }
+      });
+
+      if (mode === 'CLASS') {
+        mainTimerCard.classList.add('lecture-glow');
+        glowBackdrop.className = 'absolute -top-24 -left-24 w-96 h-96 rounded-full bg-black/5 blur-3xl pointer-events-none transition-all duration-700';
+        progressRing.setAttribute('stroke', 'url(#gaugeGradMonochrome)');
+        stateDot.className = 'w-2.5 h-2.5 rounded-full bg-black animate-pulse shadow-md shadow-black/20';
+        
+        let periodTitle = `${currentPeriod}교시`;
+        if (currentPeriod === 3) periodTitle = '3교시 (점심 전)';
+        if (currentPeriod === 7) periodTitle = '7교시 (18:00 퇴근)';
+        
+        stateBadge.className = 'text-xs md:text-sm font-extrabold tracking-wider uppercase px-4 py-1.5 rounded-full bg-black/5 border border-black/20 text-black font-mono shadow-sm';
+        stateBadge.innerText = `수업 진행 중 (${periodTitle})`;
+        
+        const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+        const isBeforeTen = (nowMin < 10 * 60) && !hasFirstClassStarted && currentPeriod === 1;
+
+        if (isBeforeTen) {
+          actionBtnIcon.innerText = '🚀';
+          actionBtnText.innerText = '오늘 첫 수업 시작 (Enter / Space)';
+        } else if (currentPeriod === 7) {
+          actionBtnIcon.innerText = '🏁';
+          actionBtnText.innerText = '오늘 수업 최종 종료 (Enter / Space)';
+        } else {
+          actionBtnIcon.innerText = '☕';
+          actionBtnText.innerText = `휴식 시작 (${customBreakDuration}분 보장) (Enter / Space)`;
+        }
+        masterActionBtn.className = 'tactile-btn w-full py-4 px-6 rounded-2xl bg-black hover:bg-zinc-800 text-white font-extrabold text-base md:text-lg tracking-wide shadow-lg shadow-black/15 active:scale-[0.98] flex items-center justify-center gap-2.5 border border-black';
+
+      } else if (mode === 'BREAK') {
+        mainTimerCard.classList.add('break-glow');
+        glowBackdrop.className = 'absolute -top-24 -left-24 w-96 h-96 rounded-full bg-black/[0.08] blur-3xl pointer-events-none transition-all duration-700';
+        progressRing.setAttribute('stroke', 'url(#gaugeGradInverted)');
+        stateDot.className = 'w-2.5 h-2.5 rounded-full bg-zinc-600 animate-pulse shadow-md shadow-black/20';
+        stateBadge.className = 'text-xs md:text-sm font-extrabold tracking-widest uppercase px-4 py-1.5 rounded-full bg-black text-white font-extrabold font-mono shadow-sm';
+        stateBadge.innerText = `☕ 온전한 휴식 시간 (${customBreakDuration}분 보장)`;
+        
+        // Critical requirement: Keep class start action button ready at all times!
+        actionBtnIcon.innerText = '▶';
+        actionBtnText.innerText = `${currentPeriod}교시 수업 시작 (Enter / Space)`;
+        masterActionBtn.className = 'tactile-btn w-full py-4 px-6 rounded-2xl bg-zinc-900 hover:bg-black text-white font-extrabold text-base md:text-lg tracking-wide shadow-lg shadow-black/20 active:scale-[0.98] flex items-center justify-center gap-2.5 border border-black';
+
+      } else if (mode === 'PRACTICE') {
+        mainTimerCard.classList.add('break-glow');
+        glowBackdrop.className = 'absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none transition-all duration-700';
+        progressRing.setAttribute('stroke', '#2563eb');
+        stateDot.className = 'w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shadow-md shadow-blue-500/30';
+        stateBadge.className = 'text-xs md:text-sm font-extrabold tracking-widest uppercase px-4 py-1.5 rounded-full bg-blue-600 text-white font-extrabold font-mono shadow-sm';
+        stateBadge.innerText = '💻 실습 & 코드 작업 진행 중';
+        
+        actionBtnIcon.innerText = '☕';
+        actionBtnText.innerText = '실습 완료 후 휴식 시작 (Enter / Space)';
+        masterActionBtn.className = 'tactile-btn w-full py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-base md:text-lg tracking-wide shadow-lg shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-2.5 border border-blue-600';
+
+      } else if (mode === 'LUNCH') {
+        mainTimerCard.classList.add('lunch-glow');
+        glowBackdrop.className = 'absolute -top-24 -left-24 w-96 h-96 rounded-full bg-black/5 blur-3xl pointer-events-none transition-all duration-700';
+        progressRing.setAttribute('stroke', 'url(#gaugeGradMonochrome)');
+        stateDot.className = 'w-2.5 h-2.5 rounded-full bg-black animate-pulse shadow-md shadow-black/20';
+        stateBadge.className = 'text-xs md:text-sm font-extrabold tracking-widest uppercase px-4 py-1.5 rounded-full bg-zinc-100 border border-black/25 text-black font-mono shadow-sm';
+        stateBadge.innerText = '🍱 점심시간 (12:30 ~ 14:00 고정)';
+        
+        actionBtnIcon.innerText = '▶';
+        actionBtnText.innerText = '오후 4교시 수업 시작 (Enter / Space)';
+        masterActionBtn.className = 'tactile-btn w-full py-4 px-6 rounded-2xl bg-black hover:bg-zinc-800 text-white font-extrabold text-base md:text-lg tracking-wide shadow-lg shadow-black/15 active:scale-[0.98] flex items-center justify-center gap-2.5 border border-black';
+      }
+
+      highlightTimetableRow();
+      updatePracticeBannerUI();
+    }
+
+    // Timetable Row Inset Highlight (Prevents border clipping)
+    function highlightTimetableRow() {
+      SCHEDULE_BLUEPRINT.forEach(s => {
+        const el = document.getElementById(`blueprint-row-${s.id}`);
+        if (!el) return;
+        el.classList.remove('timetable-active-row', 'ring-2', 'ring-black', 'bg-zinc-100', 'font-bold');
+      });
+
+      let targetId = currentPeriod;
+      if (currentMode === 'LUNCH') targetId = 'lunch';
+      else if (currentMode === 'BREAK') targetId = `b${currentPeriod - 1}`;
+
+      const activeEl = document.getElementById(`blueprint-row-${targetId}`);
+      if (activeEl) {
+        activeEl.classList.add('timetable-active-row');
+      }
+    }
+
+    // Toggle Sound Quick Button
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      const soundIcon = document.getElementById('soundIcon');
+      const soundLabel = document.getElementById('soundLabel');
+      soundIcon.innerText = isSoundEnabled ? '🔔' : '🔕';
+      soundLabel.innerText = isSoundEnabled ? 'ON' : 'OFF';
+      soundLabel.className = isSoundEnabled ? 'font-semibold text-zinc-800' : 'font-semibold text-zinc-400';
+    }
+
+    // Settings Modal Handlers
+    function toggleSettingsModal() {
+      if (settingsModal.classList.contains('hidden')) {
+        settingsModal.classList.remove('hidden');
+      } else {
+        settingsModal.classList.add('hidden');
+      }
+    }
+
+    function handleVolumeChange(val) {
+      const num = parseInt(val, 10);
+      volumeValueLabel.innerText = `${num}%`;
+      setMasterVolume(num / 100);
+      localStorage.setItem('hud_volume', num);
+    }
+
+    function handleSoundStyleChange(val) {
+      currentSoundStyle = val;
+      localStorage.setItem('hud_sound_style', val);
+      if (val !== 'mute') {
+        playChime('class_end');
+      }
+    }
+
+    function saveVisualSettings() {
+      enableConfetti = confettiToggle.checked;
+      enableScreenFlash = screenFlashToggle.checked;
+      if (ambientBgmToggle) enableAmbientBgm = ambientBgmToggle.checked;
+      localStorage.setItem('hud_enable_confetti', enableConfetti);
+      localStorage.setItem('hud_enable_screen_flash', enableScreenFlash);
+      localStorage.setItem('hud_enable_ambient_bgm', enableAmbientBgm);
+    }
+
+    function loadSavedSettings() {
+      const savedVol = localStorage.getItem('hud_volume');
+      if (savedVol !== null) {
+        volumeSlider.value = savedVol;
+        volumeValueLabel.innerText = `${savedVol}%`;
+        setMasterVolume(parseInt(savedVol, 10) / 100);
+      }
+
+      const savedStyle = localStorage.getItem('hud_sound_style');
+      if (savedStyle !== null) {
+        currentSoundStyle = savedStyle;
+        soundStyleSelect.value = savedStyle;
+      }
+
+      const savedConfetti = localStorage.getItem('hud_enable_confetti');
+      if (savedConfetti !== null) {
+        enableConfetti = (savedConfetti === 'true');
+        confettiToggle.checked = enableConfetti;
+      }
+
+      const savedFlash = localStorage.getItem('hud_enable_screen_flash');
+      if (savedFlash !== null) {
+        enableScreenFlash = (savedFlash === 'true');
+        screenFlashToggle.checked = enableScreenFlash;
+      }
+
+      const savedBgm = localStorage.getItem('hud_enable_ambient_bgm');
+      if (savedBgm !== null) {
+        enableAmbientBgm = (savedBgm === 'true');
+        if (ambientBgmToggle) ambientBgmToggle.checked = enableAmbientBgm;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Break Time Calming Ambient BGM (Web Audio API Drone Synthesis)
+    // -------------------------------------------------------------
+    function startBreakAmbientSound() {
+      if (!enableAmbientBgm || !isSoundEnabled || currentSoundStyle === 'mute') return;
+      initAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      try {
+        stopBreakAmbientSound();
+
+        ambientGainNode = audioCtx.createGain();
+        ambientGainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        ambientGainNode.gain.exponentialRampToValueAtTime(0.035 * currentVolume, audioCtx.currentTime + 2.0);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, audioCtx.currentTime);
+
+        ambientOsc1 = audioCtx.createOscillator();
+        ambientOsc1.type = 'sine';
+        ambientOsc1.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+
+        ambientOsc2 = audioCtx.createOscillator();
+        ambientOsc2.type = 'sine';
+        ambientOsc2.frequency.setValueAtTime(329.63, audioCtx.currentTime); // E4 calm fifth
+
+        ambientOsc1.connect(filter);
+        ambientOsc2.connect(filter);
+        filter.connect(ambientGainNode);
+        ambientGainNode.connect(masterGainNode || audioCtx.destination);
+
+        ambientOsc1.start();
+        ambientOsc2.start();
+      } catch (e) {
+        console.warn('Ambient sound notice:', e);
+      }
+    }
+
+    function stopBreakAmbientSound() {
+      if (ambientGainNode && audioCtx) {
+        try {
+          ambientGainNode.gain.setValueAtTime(ambientGainNode.gain.value, audioCtx.currentTime);
+          ambientGainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.0);
+          setTimeout(() => {
+            if (ambientOsc1) { try { ambientOsc1.stop(); ambientOsc1.disconnect(); } catch (e) {} ambientOsc1 = null; }
+            if (ambientOsc2) { try { ambientOsc2.stop(); ambientOsc2.disconnect(); } catch (e) {} ambientOsc2 = null; }
+            if (ambientGainNode) { try { ambientGainNode.disconnect(); } catch (e) {} ambientGainNode = null; }
+          }, 1100);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Timer Pause / Resume Controller
+    // -------------------------------------------------------------
+    function togglePauseTimer() {
+      if (!isPaused) {
+        isPaused = true;
+        pauseStartedTime = Date.now();
+        quickPauseIcon.innerText = '▶️';
+        quickPauseLabel.innerText = '재개';
+        pauseIndicatorBadge.classList.remove('hidden');
+        showToast('타이머가 일시정지되었습니다. (진행 시간이 안전하게 보존됩니다)', 'warning');
+      } else {
+        const pausedDelta = Date.now() - pauseStartedTime;
+        segmentStartTime = new Date(segmentStartTime.getTime() + pausedDelta);
+        targetEndTime = new Date(targetEndTime.getTime() + pausedDelta);
+        isPaused = false;
+        pauseStartedTime = null;
+        quickPauseIcon.innerText = '⏸️';
+        quickPauseLabel.innerText = '일시정지';
+        pauseIndicatorBadge.classList.add('hidden');
+        updateNextEventInfo();
+        showToast('타이머가 재개되었습니다.', 'lecture');
+      }
+      renderPipFrame();
+    }
+
+    // -------------------------------------------------------------
+    // Fullscreen / Zoom Focus Mode (Placed at top-right of Timer Box)
+    // -------------------------------------------------------------
+    function toggleTimerFullscreen() {
+      const card = document.getElementById('mainTimerCard');
+      if (!card) return;
+
+      if (!document.fullscreenElement && !card.classList.contains('is-zoomed')) {
+        if (card.requestFullscreen) {
+          card.requestFullscreen().catch(() => {
+            // Simulated zoom mode fallback
+            card.classList.add('is-zoomed');
+            updateZoomBtnUI(true);
+          });
+        } else {
+          card.classList.add('is-zoomed');
+          updateZoomBtnUI(true);
+        }
+      } else {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        if (card.classList.contains('is-zoomed')) {
+          card.classList.remove('is-zoomed');
+          updateZoomBtnUI(false);
+        }
+      }
+    }
+
+    function updateZoomBtnUI(isFull) {
+      if (isFull) {
+        zoomBtnLabel.innerText = '축소';
+        zoomIconExpand.classList.add('hidden');
+        zoomIconCompress.classList.remove('hidden');
+      } else {
+        zoomBtnLabel.innerText = '확대';
+        zoomIconExpand.classList.remove('hidden');
+        zoomIconCompress.classList.add('hidden');
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const isFull = !!document.fullscreenElement;
+      updateZoomBtnUI(isFull);
+    });
+
+    // -------------------------------------------------------------
+    // Picture-in-Picture (PIP) Floating Mini Window
+    // -------------------------------------------------------------
+    function renderPipFrame() {
+      if (!pipCtx || !pipCanvas) return;
+      const w = pipCanvas.width;
+      const h = pipCanvas.height;
+      const now = new Date();
+
+      // Background
+      pipCtx.fillStyle = '#ffffff';
+      pipCtx.fillRect(0, 0, w, h);
+
+      // Border outline
+      pipCtx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      pipCtx.lineWidth = 4;
+      pipCtx.strokeRect(2, 2, w - 4, h - 4);
+
+      // Status Pill Badge
+      let pillBg = '#f4f4f5';
+      let pillTextColor = '#000000';
+      let badgeText = '';
+
+      if (isPaused) {
+        pillBg = '#fef3c7';
+        pillTextColor = '#92400e';
+        badgeText = '⏸️ 일시정지됨';
+      } else if (currentMode === 'CLASS') {
+        badgeText = `수업 진행 중 (${currentPeriod}교시)`;
+      } else if (currentMode === 'BREAK') {
+        pillBg = '#f4f4f5';
+        badgeText = `☕ 휴식 시간 (${customBreakDuration}분)`;
+      } else if (currentMode === 'PRACTICE') {
+        pillBg = '#eff6ff';
+        pillTextColor = '#1d4ed8';
+        badgeText = '💻 실습 시간 진행 중';
+      } else if (currentMode === 'LUNCH') {
+        badgeText = '🍱 점심시간 (14:00까지)';
+      }
+
+      pipCtx.fillStyle = pillBg;
+      pipCtx.beginPath();
+      pipCtx.roundRect(36, 22, w - 72, 34, 17);
+      pipCtx.fill();
+      pipCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+      pipCtx.lineWidth = 1;
+      pipCtx.stroke();
+
+      pipCtx.fillStyle = pillTextColor;
+      pipCtx.font = 'bold 13px Pretendard, system-ui, sans-serif';
+      pipCtx.textAlign = 'center';
+      pipCtx.textBaseline = 'middle';
+      pipCtx.fillText(badgeText, w / 2, 39);
+
+      // Center Gauge
+      const cx = w / 2;
+      const cy = h / 2 + 12;
+      const radius = 96;
+
+      pipCtx.beginPath();
+      pipCtx.arc(cx, cy, radius, 0, 2 * Math.PI);
+      pipCtx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+      pipCtx.lineWidth = 10;
+      pipCtx.stroke();
+
+      const curRefTime = isPaused && pauseStartedTime ? pauseStartedTime : now.getTime();
+      const remainingMs = targetEndTime.getTime() - curRefTime;
+      const elapsedMs = curRefTime - segmentStartTime.getTime();
+      const isOver = remainingMs < 0;
+
+      let progressFraction = 0;
+      if (isOver) {
+        progressFraction = Math.min(1, Math.abs(remainingMs) / (10 * 60 * 1000));
+        pipCtx.strokeStyle = '#e11d48';
+      } else {
+        // Uniform clockwise countdown draining for all modes (100% -> 0%)
+        progressFraction = Math.min(1, Math.max(0, remainingMs / initialDurationMs));
+        if (remainingMs <= 10000) {
+          pipCtx.strokeStyle = '#e11d48';
+        } else if (currentMode === 'PRACTICE') {
+          pipCtx.strokeStyle = '#2563eb';
+        } else {
+          pipCtx.strokeStyle = '#000000';
+        }
+      }
+
+      if (progressFraction > 0) {
+        pipCtx.beginPath();
+        pipCtx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * progressFraction));
+        pipCtx.lineWidth = (remainingMs <= 10000 || isOver) ? 14 : 12;
+        pipCtx.lineCap = 'round';
+        pipCtx.stroke();
+      }
+
+      // Large Digits
+      pipCtx.font = '800 46px "JetBrains Mono", monospace';
+      pipCtx.fillStyle = (isOver || remainingMs <= 10000) ? '#e11d48' : '#000000';
+      pipCtx.textAlign = 'center';
+      pipCtx.textBaseline = 'middle';
+      if (remainingMs <= 10000 && remainingMs >= 0) {
+        const totalRem = Math.max(0, remainingMs);
+        const s = Math.floor(totalRem / 1000);
+        const c = Math.floor((totalRem % 1000) / 10);
+        pipCtx.fillText(`${pad(s)}.${pad(c)}`, cx, cy - 6);
+      } else {
+        pipCtx.fillText(formatDuration(remainingMs), cx, cy - 6);
+      }
+
+      // Target Subtitle
+      pipCtx.font = 'bold 12px Pretendard, sans-serif';
+      if (isOver) {
+        pipCtx.fillStyle = '#e11d48';
+        pipCtx.fillText('⚠️ 초과 (OVERTIME)', cx, cy + 32);
+      } else {
+        pipCtx.fillStyle = '#71717a';
+        pipCtx.fillText(`목표: ${formatClock(targetEndTime)}`, cx, cy + 32);
+      }
+    }
+
+    async function togglePictureInPicture() {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+          return;
+        }
+
+        renderPipFrame();
+
+        if (!pipStream) {
+          pipStream = pipCanvas.captureStream(15);
+          pipVideo.srcObject = pipStream;
+        }
+
+        await pipVideo.play();
+        await pipVideo.requestPictureInPicture();
+        showToast('📌 PIP 미니 타이머가 실행되었습니다! (슬라이드 위 항상 떠있음)', 'lecture');
+      } catch (err) {
+        console.error('PIP Error:', err);
+        showToast('PIP 모드를 시작할 수 없습니다. (브라우저 지원 여부를 확인하세요)', 'warning');
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Beginner Shortcut Guide Drawer Toggle
+    // -------------------------------------------------------------
+    let isShortcutGuideOpen = true;
+    function toggleShortcutGuide() {
+      if (!shortcutGuidePanel) return;
+      isShortcutGuideOpen = !isShortcutGuideOpen;
+      if (isShortcutGuideOpen) {
+        shortcutGuidePanel.classList.remove('hidden');
+        if (shortcutChevron) shortcutChevron.style.transform = 'rotate(0deg)';
+      } else {
+        shortcutGuidePanel.classList.add('hidden');
+        if (shortcutChevron) shortcutChevron.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Session Log Copy & CSV Export
+    // -------------------------------------------------------------
+    function copySessionLogToClipboard() {
+      if (sessionLogHistory.length === 0) {
+        showToast('아직 복사할 완료 기록이 없습니다.', 'warning');
+        return;
+      }
+
+      let text = `[SEASAC TIMER 강의 완료 기록표]\n`;
+      text += `일시: ${new Date().toLocaleDateString('ko-KR')}\n`;
+      text += `------------------------------------------------------\n`;
+      text += `세션구분\t시작~종료\t소요시간\t상태\n`;
+      sessionLogHistory.forEach(item => {
+        text += `${item.title}\t${item.start} ~ ${item.end}\t${item.durationMin}분\t${item.statusText}\n`;
+      });
+      text += `------------------------------------------------------\n`;
+      const { liveLectureSec, liveBreakSec } = getLiveStats();
+      const lecMin = Math.floor(liveLectureSec / 60);
+      const brkMin = Math.floor(liveBreakSec / 60);
+      const lecPct = ((liveLectureSec / TARGET_LECTURE_SECONDS) * 100).toFixed(1);
+      const brkPct = ((liveBreakSec / TARGET_BREAK_SECONDS) * 100).toFixed(1);
+      text += `총 강의: ${formatHourMin(liveLectureSec)} (목표 315분 대비 ${lecMin}분, ${lecPct}%) | 총 휴식: ${formatHourMin(liveBreakSec)} (목표 75분 대비 ${brkMin}분, ${brkPct}%) | 총 지연: ${statTotalOver.innerText}\n`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('📋 강의 기록이 클립보드에 복사되었습니다! (슬랙/노션/일지에 붙여넣기)', 'lecture');
+        }).catch(() => {
+          showToast('클립보드 복사에 실패했습니다.', 'warning');
+        });
+      } else {
+        showToast('브라우저 클립보드 권한이 필요합니다.', 'warning');
+      }
+    }
+
+    function exportSessionLogCSV() {
+      if (sessionLogHistory.length === 0) {
+        showToast('아직 다운로드할 완료 기록이 없습니다.', 'warning');
+        return;
+      }
+
+      let csvContent = '\uFEFF세션,시작 시각,종료 시각,소요 시간(분),상태,유형\n';
+      sessionLogHistory.forEach(item => {
+        csvContent += `"${item.title}","${item.start}","${item.end}","${item.durationMin}","${item.statusText}","${item.type}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const today = new Date().toISOString().split('T')[0];
+      link.setAttribute('href', url);
+      link.setAttribute('download', `강의_시간관리_기록표_${today}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast('📥 CSV 기록표 파일이 다운로드되었습니다!', 'lecture');
+    }
+
+    // Preview Test Actions
+    function testClassEndEffect() {
+      triggerConfettiBlast();
+      playChime('class_end');
+      showToast('🎉 수업 종료 이펙트 (폭죽 + 상승 차임) 테스트 실행!', 'lecture');
+    }
+
+    function testBreakEndEffect() {
+      triggerScreenFlash();
+      playChime('break_end');
+      showToast('🚨 휴식 종료 이펙트 (화면 테두리 스트로브 + 학교 종소리) 테스트 실행!', 'break');
+    }
+
+    function test10sWarningCountdown() {
+      const now = new Date();
+      targetEndTime = new Date(now.getTime() + 10500); // 10.5 seconds remaining
+      initialDurationMs = Math.max(initialDurationMs, 60000);
+      hasWarningFired = false;
+      hasAlertFired = false;
+      hasOvertimeFlashFired = false;
+      if (isPaused) togglePauseTimer();
+      closeSettingsModal();
+      showToast('⏱️ 10초 임박 카운트다운(밀리초·펄스) 모드가 활성화되었습니다!', 'warning');
+    }
+
+    function initLunchMode(now) {
+      instantResetGaugeToFull();
+      currentMode = 'LUNCH';
+      segmentStartTime = now;
+      const today14 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0, 0);
+      targetEndTime = today14;
+      initialDurationMs = Math.max(60000, targetEndTime - now);
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+      applyThemeStyles('LUNCH');
+      updateNextEventInfo();
+    }
+
+    // Get Official Duration for current period
+    function getPeriodDuration(periodNum, startTime) {
+      if (periodNum === 3) {
+        // 3교시: 12:30 점심 시작까지 남은 시간 유동 계산 (기본 12:10~12:30 기준 nominal 20분)
+        const base = (startTime instanceof Date) ? startTime : new Date();
+        const targetLunch = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 12, 30, 0);
+        const diffMin = Math.round((targetLunch.getTime() - base.getTime()) / 60000);
+        return Math.max(1, diffMin);
+      }
+      if (periodNum === 7) return 45; // 7교시 45분 (17:15~18:00 정각 종료!)
+      return customClassDuration;
+    }
+
+    // Instructor Flow: Option A (Start Fresh Now)
+    function startFreshNow() {
+      instantResetGaugeToFull();
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Check if current real time is lunch window
+      if (nowMinutes >= (12 * 60 + 30) && nowMinutes < (14 * 60)) {
+        initLunchMode(now);
+        showToast('현재 시각이 12:30~14:00 구간이므로 점심 모드로 시작합니다.', 'lunch');
+        return;
+      }
+
+      currentMode = 'CLASS';
+      segmentStartTime = now;
+      if (currentPeriod === 3) {
+        targetEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 30, 0);
+        initialDurationMs = Math.max(60000, targetEndTime.getTime() - segmentStartTime.getTime());
+      } else {
+        const classMinutes = getPeriodDuration(currentPeriod, now);
+        initialDurationMs = classMinutes * 60 * 1000;
+        targetEndTime = new Date(now.getTime() + initialDurationMs);
+      }
+      instantResetGaugeToFull();
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+
+      applyThemeStyles('CLASS');
+      updateNextEventInfo();
+      const displayMins = Math.round(initialDurationMs / 60000);
+      showToast(`현재 시각(${formatClock(now)}) 기준으로 ${currentPeriod}교시(${displayMins}분)를 새로 시작했습니다.`, 'lecture');
+    }
+
+    // Instructor Flow: Option B (Retroactive Sync to Schedule)
+    function syncToOfficialSchedule() {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      if (nowMinutes >= (12 * 60 + 30) && nowMinutes < (14 * 60)) {
+        initLunchMode(now);
+        return;
+      }
+
+      let matched = false;
+      for (const item of SCHEDULE_BLUEPRINT) {
+        const [sh, sm] = item.start.split(':').map(Number);
+        const [eh, em] = item.end.split(':').map(Number);
+        const startTotal = sh * 60 + sm;
+        const endTotal = eh * 60 + em;
+
+        if (nowMinutes >= startTotal && nowMinutes < endTotal) {
+          matched = true;
+          const sessionStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), sh, sm, 0);
+          const sessionEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eh, em, 0);
+
+          if (item.isLunch) {
+            initLunchMode(now);
+          } else if (item.isBreak) {
+            currentMode = 'BREAK';
+            currentPeriod = typeof item.id === 'string' ? (parseInt(item.id.replace('b', '')) + 1) : 2;
+            segmentStartTime = sessionStart;
+            targetEndTime = sessionEnd;
+            initialDurationMs = item.duration * 60 * 1000;
+            applyThemeStyles('BREAK');
+          } else {
+            currentMode = 'CLASS';
+            currentPeriod = item.id;
+            segmentStartTime = sessionStart;
+            targetEndTime = sessionEnd;
+            initialDurationMs = item.duration * 60 * 1000;
+            applyThemeStyles('CLASS');
+          }
+          break;
+        }
+      }
+
+      if (!matched) {
+        currentPeriod = 1;
+        startFreshNow();
+      } else {
+        hasAlertFired = false;
+        hasWarningFired = false;
+        hasOvertimeFlashFired = false;
+        updateNextEventInfo();
+        showToast(`정규 시간표에 맞춰 현재 세션(${formatClock(segmentStartTime)} 시작)으로 동기화되었습니다.`, 'lecture');
+      }
+    }
+
+    function manualSelectPeriod(p) {
+      currentPeriod = p;
+      startFreshNow();
+    }
+
+    function manualSelectLunch() {
+      instantResetGaugeToFull();
+      initLunchMode(new Date());
+      showToast('점심시간 모드로 전환되었습니다. (14:00까지)', 'lunch');
+    }
+
+    function manualSelectPractice(minutes = 20) {
+      instantResetGaugeToFull();
+      const now = new Date();
+      currentMode = 'PRACTICE';
+      segmentStartTime = now;
+      initialDurationMs = minutes * 60 * 1000;
+      targetEndTime = new Date(now.getTime() + initialDurationMs);
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+
+      applyThemeStyles('PRACTICE');
+      updateNextEventInfo();
+      showToast(`💻 ${minutes}분 실습 세션이 시작되었습니다! 마감에 맞춰 원이 줄어듭니다.`, 'break');
+    }
+
+    function updateNextEventInfo() {
+      let endClock = formatClock(targetEndTime);
+      if (currentMode === 'CLASS' && currentPeriod === 3) {
+        endClock = '12:30';
+      }
+      targetEndTimeText.innerText = endClock;
+      if (quickSubTargetEnd) quickSubTargetEnd.innerText = endClock;
+      if (currentStartTimeBadge) currentStartTimeBadge.innerText = formatClock(segmentStartTime);
+
+      if (currentMode === 'CLASS') {
+        if (currentPeriod === 3) {
+          nextEventText.innerText = '12:30 (점심시간 시작)';
+        } else if (currentPeriod === 7) {
+          nextEventText.innerText = '18:00 (🎉 칼퇴근!)';
+        } else {
+          nextEventText.innerText = `${endClock} (${customBreakDuration}분 휴식)`;
+        }
+      } else if (currentMode === 'BREAK') {
+        nextEventText.innerText = `${endClock} (${currentPeriod}교시 시작)`;
+      } else if (currentMode === 'PRACTICE') {
+        nextEventText.innerText = `${endClock} (실습 마감 후 휴식)`;
+      } else if (currentMode === 'LUNCH') {
+        nextEventText.innerText = '14:00 (오후 4교시 시작)';
+      }
+    }
+
+    // Modal Control & Start Time Editing
+    function toggleStartTimeEditModal() {
+      if (startTimeEditModal.classList.contains('hidden')) {
+        startTimeEditModal.classList.remove('hidden');
+        editStartTimeInput.value = formatClock(segmentStartTime);
+        setTimeout(() => {
+          if (editStartTimeInput) editStartTimeInput.focus();
+        }, 50);
+      } else {
+        startTimeEditModal.classList.add('hidden');
+      }
+    }
+
+    function openTimePickerDropdown() {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      if (!editStartTimeInput) return;
+      if (typeof editStartTimeInput.showPicker === 'function') {
+        try {
+          editStartTimeInput.showPicker();
+          return;
+        } catch (e) {
+          // Fallback if browser blocks showPicker
+        }
+      }
+      editStartTimeInput.focus();
+    }
+
+    // Consecutive cumulative subtraction/addition from CURRENT input value
+    function applyPresetStartDiff(diffMinutes) {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+      let baseDate = new Date(segmentStartTime);
+      const val = editStartTimeInput.value;
+      if (val) {
+        const parts = val.split(':').map(Number);
+        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          baseDate.setHours(parts[0], parts[1], 0, 0);
+        }
+      }
+      const adjusted = new Date(baseDate.getTime() + diffMinutes * 60000);
+      editStartTimeInput.value = formatClock(adjusted);
+    }
+
+    // Keyboard submit (Enter), arrow keys (Up/Down +/-1 min), and smooth mouse wheel tuning for Start Time Editor
+    if (editStartTimeInput) {
+      editStartTimeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          saveCustomStartTime();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          applyPresetStartDiff(1);
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          e.stopPropagation();
+          applyPresetStartDiff(-1);
+        }
+      });
+      editStartTimeInput.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const step = e.shiftKey ? 5 : 1;
+        const delta = e.deltaY < 0 ? step : -step;
+        applyPresetStartDiff(delta);
+      });
+    }
+
+    // Scoped Enter-key handler and button focus-trap prevention for Start Time Modal
+    if (startTimeEditModal) {
+      startTimeEditModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          saveCustomStartTime();
+        }
+      });
+      // Auto-blur all buttons inside modal after click to prevent focus trap
+      startTimeEditModal.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          if (e.currentTarget && typeof e.currentTarget.blur === 'function') {
+            e.currentTarget.blur();
+          }
+        });
+      });
+    }
+
+    function saveCustomStartTime() {
+      const val = editStartTimeInput.value;
+      if (!val) return;
+      const [newHours, newMinutes] = val.split(':').map(Number);
+      
+      const newStart = new Date(segmentStartTime);
+      newStart.setHours(newHours, newMinutes, 0, 0);
+
+      segmentStartTime = newStart;
+      if (currentMode === 'CLASS') {
+        if (currentPeriod === 3) {
+          targetEndTime = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate(), 12, 30, 0);
+          initialDurationMs = Math.max(60000, targetEndTime.getTime() - segmentStartTime.getTime());
+        } else {
+          const currentSessionDurationMin = getPeriodDuration(currentPeriod, newStart);
+          initialDurationMs = currentSessionDurationMin * 60 * 1000;
+          targetEndTime = new Date(segmentStartTime.getTime() + initialDurationMs);
+        }
+      } else if (currentMode === 'BREAK') {
+        initialDurationMs = customBreakDuration * 60 * 1000;
+        targetEndTime = new Date(segmentStartTime.getTime() + initialDurationMs);
+      } else if (currentMode === 'LUNCH') {
+        const today14 = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate(), 14, 0, 0);
+        initialDurationMs = Math.max(60000, today14.getTime() - segmentStartTime.getTime());
+        targetEndTime = today14;
+      }
+
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+
+      updateNextEventInfo();
+      toggleStartTimeEditModal();
+      showToast(`시작 시각이 ${formatClock(segmentStartTime)}으로 수정되어 남은 시간이 재계산되었습니다.`, 'lecture');
+    }
+
+    // Master Action Toggle: Handles Class End -> Break (Guaranteed 15 min) or Break End -> Class
+        function handleMasterAction() {
+      const now = new Date();
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+
+      // Handle before 10:00 AM first class launch
+      if (currentMode === 'CLASS' && !hasFirstClassStarted && (now.getHours() * 60 + now.getMinutes() < 10 * 60) && currentPeriod === 1) {
+        hasFirstClassStarted = true;
+        segmentStartTime = now;
+        initialDurationMs = getPeriodDuration(1) * 60 * 1000;
+        targetEndTime = new Date(now.getTime() + initialDurationMs);
+        instantResetGaugeToFull();
+        applyThemeStyles('CLASS');
+        updateNextEventInfo();
+        showToast('🚀 1교시 수업이 시작되었습니다! 오늘도 활기찬 하루 되세요. 🌱', 'lecture');
+        return;
+      }
+
+      if (currentMode === 'CLASS') {
+        const elapsedSec = Math.round((now - segmentStartTime) / 1000);
+        totalLectureSeconds += elapsedSec;
+        updateCumulativeStatsUI(now);
+
+        const isOver = now > targetEndTime;
+        if (isOver) {
+          const overSec = Math.round((now - targetEndTime) / 1000);
+          totalOvertimeSeconds += overSec;
+          statTotalOver.innerText = `+${Math.floor(totalOvertimeSeconds / 60)}분`;
+        }
+
+        let sessionTitle = `${currentPeriod}교시 강의`;
+        if (currentPeriod === 3) sessionTitle = '3교시 강의 (점심 전)';
+        if (currentPeriod === 7) sessionTitle = '7교시 (최종 45분)';
+
+        addLogEntry(
+          sessionTitle,
+          segmentStartTime,
+          now,
+          elapsedSec,
+          isOver ? '지연 완료' : '정상 완료',
+          'CLASS'
+        );
+
+        // Check 12:30 lunch rule
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        if (currentPeriod === 3 || (nowMin >= (12 * 60 + 25) && nowMin < (14 * 60))) {
+          initLunchMode(now);
+          showToast('3교시 완료! 점심시간(14:00까지)이 시작되었습니다.', 'lunch');
+          return;
+        }
+
+        // Check 7교시 18:00 최종 퇴근 피날레
+        if (currentPeriod >= 7) {
+          triggerFinaleCelebration();
+          currentPeriod = 7;
+          stateBadge.innerText = '🏁 오늘 수업 최종 종료 (18:00 퇴근)';
+          actionBtnIcon.innerText = '🎉';
+          actionBtnText.innerText = '오늘도 모두 수고하셨습니다 👏';
+          return;
+        }
+
+        // Standard Guaranteed Break Mode (Default 15 min)
+        currentMode = 'BREAK';
+        segmentStartTime = now;
+        currentPeriod++;
+        instantResetGaugeToFull();
+        initialDurationMs = customBreakDuration * 60 * 1000;
+        targetEndTime = new Date(now.getTime() + initialDurationMs);
+        
+        applyThemeStyles('BREAK');
+        updateNextEventInfo();
+        showToast(`수업 완료! 온전한 ${customBreakDuration}분 휴식이 시작되었습니다.`, 'break');
+        startBreakAmbientSound();
+
+      } else if (currentMode === 'PRACTICE') {
+        const elapsedSec = Math.round((now - segmentStartTime) / 1000);
+        totalLectureSeconds += elapsedSec;
+        updateCumulativeStatsUI(now);
+
+        const isOver = now > targetEndTime;
+        if (isOver) {
+          const overSec = Math.round((now - targetEndTime) / 1000);
+          totalOvertimeSeconds += overSec;
+          statTotalOver.innerText = `+${Math.floor(totalOvertimeSeconds / 60)}분`;
+        }
+
+        addLogEntry(
+          '실습 세션',
+          segmentStartTime,
+          now,
+          elapsedSec,
+          isOver ? '초과 완료' : '정상 완료',
+          'PRACTICE'
+        );
+
+        // Transition to guaranteed Break
+        currentMode = 'BREAK';
+        segmentStartTime = now;
+        initialDurationMs = customBreakDuration * 60 * 1000;
+        targetEndTime = new Date(now.getTime() + initialDurationMs);
+        
+        applyThemeStyles('BREAK');
+        updateNextEventInfo();
+        showToast(`실습 완료! 온전한 ${customBreakDuration}분 휴식이 시작되었습니다.`, 'break');
+        startBreakAmbientSound();
+
+      } else if (currentMode === 'BREAK' || currentMode === 'LUNCH') {
+        const elapsedSec = Math.round((now - segmentStartTime) / 1000);
+        if (currentMode === 'BREAK') {
+          totalBreakSeconds += elapsedSec;
+          statBreakElapsedSec = elapsedSec;
+        }
+        updateCumulativeStatsUI(now);
+
+        const isOver = now > targetEndTime;
+        if (isOver) {
+          const overSec = Math.round((now - targetEndTime) / 1000);
+          totalOvertimeSeconds += overSec;
+          statTotalOver.innerText = `+${Math.floor(totalOvertimeSeconds / 60)}분`;
+        }
+
+        addLogEntry(
+          currentMode === 'LUNCH' ? '점심시간' : `${currentPeriod - 1}교시 휴식`,
+          segmentStartTime,
+          now,
+          elapsedSec,
+          isOver ? '초과 휴식' : '완료',
+          currentMode
+        );
+
+        if (currentMode === 'LUNCH') currentPeriod = 4;
+
+        currentMode = 'CLASS';
+        segmentStartTime = now;
+        if (currentPeriod === 3) {
+          targetEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 30, 0);
+          initialDurationMs = Math.max(60000, targetEndTime.getTime() - segmentStartTime.getTime());
+        } else {
+          const classMinutes = getPeriodDuration(currentPeriod, now);
+          initialDurationMs = classMinutes * 60 * 1000;
+          targetEndTime = new Date(now.getTime() + initialDurationMs);
+        }
+
+        applyThemeStyles('CLASS');
+        updateNextEventInfo();
+        showToast(`${currentPeriod}교시 수업이 시작되었습니다.`, 'lecture');
+        stopBreakAmbientSound();
+      }
+    }
+
+    function addLogEntry(title, start, end, durationSec, statusText, type) {
+      if (emptyLogPlaceholder && emptyLogPlaceholder.parentNode) emptyLogPlaceholder.remove();
+      completedSessionsCount++;
+      statCompletedCount.innerText = `${completedSessionsCount} / 7`;
+
+      const durationMin = Math.round(durationSec / 60);
+      sessionLogHistory.push({
+        title,
+        start: formatClock(start),
+        end: formatClock(end),
+        durationMin,
+        statusText,
+        type,
+        timestamp: new Date().toISOString()
+      });
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-zinc-50 transition-colors border-b border-black/10 text-[11px]';
+
+      let tagCol = 'text-black font-bold';
+      if (type === 'BREAK') tagCol = 'text-zinc-700 font-semibold';
+      if (type === 'LUNCH') tagCol = 'text-zinc-800 font-bold';
+
+      const isDelay = statusText.includes('지연') || statusText.includes('초과');
+
+      tr.innerHTML = `
+        <td class="py-2.5 px-2.5 ${tagCol}">${title}</td>
+        <td class="py-2.5 px-2.5 text-zinc-600">${formatClock(start)} ~ ${formatClock(end)}</td>
+        <td class="py-2.5 px-2.5 text-black font-bold">${durationMin}분</td>
+        <td class="py-2.5 px-2.5 text-right">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+            isDelay ? 'bg-rose-600 text-white border border-rose-600' : 'bg-zinc-100 text-zinc-800 border border-black/15'
+          }">${statusText}</span>
+        </td>
+      `;
+      sessionLogTableBody.prepend(tr);
+    }
+
+    function extendTime(minutes) {
+      targetEndTime = new Date(targetEndTime.getTime() + minutes * 60000);
+      initialDurationMs += minutes * 60000;
+      hasAlertFired = false;
+      hasWarningFired = false;
+      hasOvertimeFlashFired = false;
+      updateNextEventInfo();
+    }
+
+    function updateCustomDurations() {
+      customBreakDuration = parseInt(document.getElementById('breakSettingInput').value) || 15;
+      customClassDuration = parseInt(document.getElementById('classSettingInput').value) || 50;
+      if (currentMode === 'CLASS') {
+        actionBtnText.innerText = `휴식 시작 (${customBreakDuration}분 보장)`;
+      }
+      updateNextEventInfo();
+    }
+
+    // -------------------------------------------------------------
+    // High-Resolution Master Engine Loop (35ms ~ 30FPS for Millisecond Precision)
+    // -------------------------------------------------------------
+    let lastClockSec = -1;
+    let lastPipRenderTime = 0;
+
+    function runEngineTick() {
+      const now = new Date();
+      const nowMs = now.getTime();
+
+      // Wall clock: update once per second
+      const currentSec = now.getSeconds();
+      if (currentSec !== lastClockSec) {
+        lastClockSec = currentSec;
+        wallClock.innerText = formatFullClock(now);
+        updateCumulativeStatsUI(now);
+      }
+
+      // Check 09:50 AM Morning Preparation Alert (Strictly once at 09:50 AM)
+      const nowHours = now.getHours();
+      const nowMins = now.getMinutes();
+      const totalNowMins = nowHours * 60 + nowMins;
+
+      if (totalNowMins < 10 * 60) {
+        if (nowHours === 9 && nowMins === 50 && !hasMorningAlertFired) {
+          hasMorningAlertFired = true;
+          if (!isInitialLoad) {
+            showToast('수업 시작 10분 전입니다. 강의 준비를 시작해 주세요! 🌱', 'lecture');
+            playChime('class_end');
+          }
+        }
+      }
+
+      // If Paused: keep frozen display, render PIP (throttled) and return
+      if (isPaused) {
+        if (nowMs - lastPipRenderTime >= 500) {
+          lastPipRenderTime = nowMs;
+          renderPipFrame();
+        }
+        return;
+      }
+
+      // Auto-trigger Fixed Lunch if 12:30 hits during active period
+      if (currentMode !== 'LUNCH' && totalNowMins >= (12 * 60 + 30) && totalNowMins < (14 * 60)) {
+        handleMasterAction();
+        initLunchMode(now);
+        if (!isInitialLoad) {
+          showToast('정규 12:30 점심시간에 도달했습니다! (14:00까지 휴식)', 'lunch');
+          triggerConfettiBlast();
+          playChime('lunch');
+        }
+        return;
+      }
+
+      // Elapsed & Remaining
+      const elapsedMs = nowMs - segmentStartTime.getTime();
+      const remainingMs = targetEndTime.getTime() - nowMs;
+
+      elapsedTimeText.innerText = formatDuration(elapsedMs);
+
+      // -----------------------------------------------------------
+      // PHASE 1: Normal In-Progress (> 10s remaining)
+      // Clockwise Draining Countdown (100% -> 0%) across ALL modes
+      // -----------------------------------------------------------
+      if (remainingMs > 10000) {
+        timerDisplay.innerText = formatDuration(remainingMs);
+        timerDisplay.className = 'timer-font text-5xl md:text-6xl font-extrabold tracking-tighter text-black drop-shadow-sm transition-colors duration-300';
+        timerDisplay.classList.remove('animate-countdown-pulse', 'text-rose-600');
+        
+        overtimeBadge.classList.add('hidden');
+        mainTimerCard.classList.remove('overtime-glow', 'warning-glow');
+        warningAmbientRing.classList.add('opacity-0');
+        warningAmbientRing.classList.remove('animate-ambient-red');
+
+        // Hide Overtime Ring in normal phase
+        overtimeRing.style.display = 'none';
+        overtimeRing.style.strokeDashoffset = RING_CIRCUMFERENCE;
+        progressRing.style.display = 'block';
+        progressRing.setAttribute('stroke-width', '12');
+        progressRing.classList.remove('animate-ring-pulse');
+        progressRing.style.transition = 'stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease';
+
+        // ALL MODES: Clockwise Draining Countdown (100% -> 0%)
+        const drainFraction = Math.min(1, Math.max(0, remainingMs / initialDurationMs));
+        progressRing.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - drainFraction);
+        progressRing.setAttribute('stroke', currentMode === 'PRACTICE' ? '#2563eb' : (currentMode === 'BREAK' ? 'url(#gaugeGradInverted)' : 'url(#gaugeGradMonochrome)'));
+
+      // -----------------------------------------------------------
+      // PHASE 2: 10-Second Warning Impending (0 <= remainingMs <= 10000)
+      // Real-time Milliseconds (0.00s), Zero-Overlap Compact Layout, Red Pulse
+      // -----------------------------------------------------------
+      } else if (remainingMs >= 0) {
+        const totalRemaining = Math.max(0, remainingMs);
+        const sec = Math.floor(totalRemaining / 1000);
+        const cs = Math.floor((totalRemaining % 1000) / 10);
+        const secStr = pad(sec);
+        const csStr = pad(cs);
+
+        // Zero-Overlap Layout: '00:' omitted, '초' large, '.밀리초' half size
+        timerDisplay.innerHTML = `<span class="inline-flex items-baseline justify-center tracking-tight"><span class="text-5xl md:text-6xl font-black">${secStr}</span><span class="text-2xl md:text-3xl font-bold opacity-80 ml-0.5">.${csStr}</span></span>`;
+        
+        // Warning style: Rose red font (#e11d48) + smooth heartbeat countdown pulse
+        timerDisplay.className = 'timer-font font-extrabold tracking-tighter text-rose-600 drop-shadow-sm transition-colors duration-200 animate-countdown-pulse';
+        overtimeBadge.classList.add('hidden');
+        
+        // Ambient soft red glow around the card
+        mainTimerCard.classList.add('warning-glow');
+        mainTimerCard.classList.remove('overtime-glow');
+        warningAmbientRing.classList.remove('opacity-0');
+        warningAmbientRing.classList.add('animate-ambient-red');
+
+        // Hide Overtime Ring
+        overtimeRing.style.display = 'none';
+        overtimeRing.style.strokeDashoffset = RING_CIRCUMFERENCE;
+        progressRing.style.display = 'block';
+
+        // Ring glows in vivid rose red (#e11d48) with pulse animation
+        progressRing.setAttribute('stroke', '#e11d48');
+        progressRing.setAttribute('stroke-width', '14');
+        progressRing.classList.add('animate-ring-pulse');
+        progressRing.style.transition = 'stroke-dashoffset 0.05s linear, stroke 0.3s ease';
+
+        // Real-time countdown drain (100% -> 0%)
+        const drainFraction = Math.min(1, Math.max(0, remainingMs / initialDurationMs));
+        progressRing.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - drainFraction);
+
+        if (!hasWarningFired) {
+          hasWarningFired = true;
+          // Silence before 10 AM unless manually started, and suppress on initial load
+          if (!isInitialLoad && (totalNowMins >= 10 * 60 || hasFirstClassStarted)) {
+            if (currentMode === 'CLASS') {
+              showToast('수업 종료 10초 전입니다! 마무리를 준비하세요.', 'warning');
+            } else if (currentMode === 'PRACTICE') {
+              showToast('실습 마감 10초 전입니다! 코드를 정리하세요.', 'warning');
+            } else if (currentMode === 'BREAK') {
+              showToast('휴식 종료 10초 전입니다! 수업 복귀를 준비하세요.', 'warning');
+            }
+          }
+        }
+
+      // -----------------------------------------------------------
+      // PHASE 3: Common Overtime Phase (remainingMs < 0)
+      // Emptied border is newly filled clockwise by bold warning red (#e11d48) gauge!
+      // -----------------------------------------------------------
+      } else {
+        timerDisplay.innerText = formatDuration(remainingMs);
+        timerDisplay.className = 'timer-font text-4xl md:text-5xl font-extrabold tracking-tighter text-rose-600 drop-shadow-sm transition-colors duration-300';
+        timerDisplay.classList.remove('animate-countdown-pulse');
+        
+        // Show separated overtime badge
+        overtimeBadge.classList.remove('hidden');
+        if (currentMode === 'BREAK') {
+          overtimeBadge.innerText = '⚠️ + 휴식 초과 진행 중';
+        } else if (currentMode === 'PRACTICE') {
+          overtimeBadge.innerText = '⚠️ + 실습 시간 초과 (오버타임)';
+        } else {
+          overtimeBadge.innerText = '⚠️ + OVERTIME (수업 초과)';
+        }
+
+        mainTimerCard.classList.remove('warning-glow');
+        mainTimerCard.classList.add('overtime-glow');
+        warningAmbientRing.classList.add('opacity-0');
+        progressRing.classList.remove('animate-ring-pulse');
+
+        // Base progress ring stays completely drained (dashoffset = RING_CIRCUMFERENCE)
+        progressRing.style.strokeDashoffset = RING_CIRCUMFERENCE;
+        progressRing.style.transition = 'stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1)';
+
+        // OVERTIME RING: Emptied border is filled clockwise in bold warning red (#e11d48)
+        overtimeRing.style.display = 'block';
+        overtimeRing.style.transition = 'stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease';
+        const overtimeMs = Math.abs(remainingMs);
+        // Fill up to 100% over a 10-minute overtime window
+        const overtimeFraction = Math.min(1, overtimeMs / (10 * 60 * 1000));
+        overtimeRing.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - overtimeFraction);
+        overtimeRing.setAttribute('stroke', '#e11d48');
+        overtimeRing.setAttribute('stroke-width', '14');
+
+        // One-shot ambient red flash on initial overtime entry
+        if (!hasOvertimeFlashFired) {
+          hasOvertimeFlashFired = true;
+          if (!isInitialLoad && (totalNowMins >= 10 * 60 || hasFirstClassStarted)) {
+            triggerOneShotOvertimeFlash();
+          }
+        }
+
+        // Sound alert & Visual blast upon transitioning into overtime
+        if (!hasAlertFired) {
+          hasAlertFired = true;
+          // Silence before 10 AM unless manually started, and suppress on initial load
+          if (!isInitialLoad && (totalNowMins >= 10 * 60 || hasFirstClassStarted)) {
+            if (currentMode === 'CLASS' || currentMode === 'PRACTICE') {
+              if (currentMode === 'CLASS' && currentPeriod >= 7) {
+                triggerFinaleCelebration();
+              } else {
+                showToast('시간이 종료되었습니다! 휴식을 시작하세요. 🎉', 'over');
+                triggerConfettiBlast();
+                playChime('class_end');
+              }
+            } else if (currentMode === 'BREAK') {
+              showToast('휴식 시간이 종료되었습니다! 수업을 시작하세요. 🚨', 'over');
+              triggerScreenFlash();
+              playChime('break_end');
+            }
+          }
+        }
+      }
+
+      // Synchronize PIP Frame (throttled)
+      const pipThrottleMs = (remainingMs <= 10000 && remainingMs >= 0) ? 66 : 200;
+      if (nowMs - lastPipRenderTime >= pipThrottleMs) {
+        lastPipRenderTime = nowMs;
+        renderPipFrame();
+      }
+    }
+
+    setInterval(runEngineTick, 35);
+
+    // -------------------------------------------------------------
+    // Global Keyboard Shortcuts
+    // -------------------------------------------------------------
+    window.addEventListener('keydown', (e) => {
+      const practiceModal = document.getElementById('practiceSetupModal');
+      const targetStatsModal = document.getElementById('targetStatsModal');
+      const isAnyModalOpen = (startTimeEditModal && !startTimeEditModal.classList.contains('hidden')) ||
+                             (settingsModal && !settingsModal.classList.contains('hidden')) ||
+                             (practiceModal && !practiceModal.classList.contains('hidden')) ||
+                             (targetStatsModal && !targetStatsModal.classList.contains('hidden'));
+
+      // Ignore if user is currently typing in an input field or ANY modal is open
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || isAnyModalOpen) {
+        if (e.key === 'Escape') {
+          if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+          if (startTimeEditModal && !startTimeEditModal.classList.contains('hidden')) toggleStartTimeEditModal();
+          if (settingsModal && !settingsModal.classList.contains('hidden')) toggleSettingsModal();
+          if (practiceModal && !practiceModal.classList.contains('hidden')) closePracticeSetupModal();
+          if (targetStatsModal && !targetStatsModal.classList.contains('hidden')) closeTargetStatsModal();
+          return;
+        }
+        if (startTimeEditModal && !startTimeEditModal.classList.contains('hidden') && e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          saveCustomStartTime();
+          return;
+        }
+        return; // Strictly isolate modal inputs from firing global shortcuts like handleMasterAction!
+      }
+
+      // Space or Enter: Master action (Class End / Break End)
+      if (e.code === 'Space' || e.key === 'Enter') {
+        e.preventDefault();
+        handleMasterAction();
+        return;
+      }
+
+      // P key: Pause / Resume or Alt+P: Practice
+      if (e.key === 'p' || e.key === 'P' || e.key === 'ㅔ' || e.key === 'ㅖ') {
+        e.preventDefault();
+        if (e.altKey) {
+          manualSelectPractice(20);
+        } else {
+          togglePauseTimer();
+        }
+        return;
+      }
+
+      // F key: Fullscreen toggle
+      if (e.key === 'f' || e.key === 'F' || e.key === 'ㄹ') {
+        e.preventDefault();
+        toggleTimerFullscreen();
+        return;
+      }
+
+      // + key or Alt+3: +3 min extend
+      if (e.key === '+' || e.key === '=' || (e.altKey && (e.key === '3' || e.code === 'Digit3'))) {
+        e.preventDefault();
+        extendTime(3);
+        showToast('타이머가 3분 연장되었습니다! (+3분)', 'lecture');
+        return;
+      }
+
+      // Alt+5: +5 min extend
+      if (e.altKey && (e.key === '5' || e.code === 'Digit5')) {
+        e.preventDefault();
+        extendTime(5);
+        showToast('타이머가 5분 연장되었습니다! (+5분)', 'lecture');
+        return;
+      }
+
+      // M key: Mute toggle
+      if (e.key === 'm' || e.key === 'M' || e.key === 'ㅡ') {
+        e.preventDefault();
+        toggleSound();
+        return;
+      }
+
+      // ? or / key: Toggle Shortcut Guide
+      if (e.key === '?' || e.key === '/') {
+        e.preventDefault();
+        toggleShortcutGuide();
+        return;
+      }
+
+      // Escape: Close modals or exit fullscreen
+      if (e.key === 'Escape') {
+        if (startTimeEditModal && !startTimeEditModal.classList.contains('hidden')) toggleStartTimeEditModal();
+        if (settingsModal && !settingsModal.classList.contains('hidden')) toggleSettingsModal();
+        if (practiceModal && !practiceModal.classList.contains('hidden')) closePracticeSetupModal();
+        if (targetStatsModal && !targetStatsModal.classList.contains('hidden')) closeTargetStatsModal();
+        if (document.fullscreenElement) document.exitFullscreen();
+      }
+    });
+
+    // Initial Startup
+    
+    const practiceTargetInput = document.getElementById('practiceTargetInput');
+    if (practiceTargetInput) {
+      practiceTargetInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          startPracticeFromInput();
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTheme(currentTheme);
+      loadSavedSettings();
+      renderScheduleBlueprint();
+      updateInstructorNameUI();
+      syncToOfficialSchedule();
+      updateCumulativeStatsUI();
+      if (targetEndTime && Date.now() > targetEndTime.getTime()) {
+        hasAlertFired = true;
+        hasWarningFired = true;
+        hasOvertimeFlashFired = true;
+      }
+      showWelcomeBanner();
+      setTimeout(() => {
+        isInitialLoad = false;
+      }, 600);
+    });
+
+</script>
+</body>
+</html>
